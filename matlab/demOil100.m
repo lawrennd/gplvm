@@ -2,8 +2,6 @@
 
 % DEMOIL100 Model the oil data with a 2-D GPLVM using MLP kernel.
 
-% GPLVM
-
 % Fix seeds
 randn('seed', 1e5);
 rand('seed', 1e5);
