@@ -1,4 +1,4 @@
-% DEMOIL1 Model the oil data with a 2-D GPLVM using RBF kernel.
+% DEMOIL3 Model the oil data with a 2-D GPLVM using RBF kernel and Laplacian latent prior.
 
 % GPLVM
 
@@ -7,13 +7,14 @@ randn('seed', 1e5);
 rand('seed', 1e5);
 
 dataSetName = 'oil';
-experimentNo = 1;
+experimentNo = 3;
 
 % load data
 [Y, lbls] = gplvmLoadData(dataSetName);
 
 % Set IVM active set size and iteration numbers.
 options = gplvmOptions;
+options.prior.type = 'laplace';
 numActive = 100;
 
 % Initialise X with PCA.

@@ -43,4 +43,29 @@ switch dataset
  case 'swissRoll'
   load swiss_roll_data
   Y = X_data(:, 1:1000)';
+
+ case 'horse'
+  load horse.dat;
+  horse([133, 309], :) = [];
+  ordinalAtr = [1 2 7 8 9 10 11 12 13 14 15 17 18 21];
+  horse(:, ordinalAtr) = horse(:, ordinalAtr) - 1;
+
+  % Set labels as outcome --- 1 lived, 2 died, 3 was euthanized
+  lbls = zeros(size(horse, 1), 3);
+  for i = 1:size(horse, 1)
+    lbls(i, horse(i, 23)) = 1;
+  end
+  
+  horse(:, 23:28) = [];
+  horse(:, 3) = [];
+  Y = horse;
+  % Normalise Gaussian variables.
+  for i = [3 4 5 15 18 19 21];
+    va = var(Y(find(~isnan(Y(:, i))), i));
+    Y(:, i) = Y(:, i)/va;
+  end
+
+ %/~case 'pitch'
+ %load -ascii bballpitch.mat
+  %Y = bballpitch(:,8:end);
 end

@@ -1,6 +1,6 @@
 function gplvmStaticImageVisualise(model, visualiseFunction, axesWidth, varargin)
 
-% GPLVMSTATICIMAGEVISUALISE Generate a scatte rplot of the images without overlap.
+% GPLVMSTATICIMAGEVISUALISE Generate a scatter plot of the images without overlap.
 
 % GPLVM 
 
@@ -43,7 +43,7 @@ while ~isempty(visitOrder)
     axis image
     axis off
     
-    removePoints = find(abs(model.X(visitOrder, 1) - model.X(i, 1)) < widthVal ...
+    removePoints = find(abs(model.X(visitOrder, 1) - model.X(i, 1)) < widthVal/2 ...
 			&  abs(model.X(visitOrder, 2) - model.X(i, 2)) < heightVal);
     visitOrder(removePoints) = [];    
   else

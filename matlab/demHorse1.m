@@ -1,4 +1,4 @@
-% DEMOIL1 Model the oil data with a 2-D GPLVM using RBF kernel.
+% DEMHORSE1 Model the horse data with a 2-D GPLVM.
 
 % GPLVM
 
@@ -6,23 +6,46 @@
 randn('seed', 1e5);
 rand('seed', 1e5);
 
-dataSetName = 'oil';
+dataSetName = 'horse';
 experimentNo = 1;
 
 % load data
 [Y, lbls] = gplvmLoadData(dataSetName);
 
 % Set IVM active set size and iteration numbers.
-options = gplvmOptions;
 numActive = 100;
 
-% Initialise X with PCA.
-X = gplvmPcaInit(Y, 2);
+options = gplvmOptions;
 
-% Fit the GP latent variable model
-noiseType = 'gaussian';
+% because of small data-set, jointly optimise active points with kern params.
+options.gplvmKern = 1;
+options.kernIters = 50;
+
+% Because of ordered noise models, optimise noise too.
+options.noiseIters = 50;
+
+orderedIndex = [1, 2, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 20];
+gaussianIndex = [3, 4, 5, 15, 18, 19, 21];
+for i = orderedIndex;
+  noiseType{i} = 'ordered';
+end
+for i = gaussianIndex
+  noiseType{i} = 'mgaussian';
+end
+
+% Initialise X with PCA.
+tempY = Y;
+for i = orderedIndex;
+  va = var(tempY(find(~isnan(tempY(:, i))), i));
+  tempY(:, i) = tempY(:, i)/sqrt(va);
+end
+X = gplvmPcaInit(tempY, 2);
+
+
 kernelType = {'rbf', 'bias', 'white'};
+
 model = gplvmFit(X, Y, numActive, options, noiseType, kernelType, lbls);
+
 
 % Save the results.
 X = model.X;  

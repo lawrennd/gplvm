@@ -1,12 +1,13 @@
-function model = gplvmFit(X, Y, numActive, display, pointIters, extIters, ...
-                          kernIters, noiseType, kernelType)
+function model = gplvmFit(X, Y, numActive, options, noiseType, kernelType, lbls)
 
 % GPLVMFIT Fit a Gaussian process latent variable model.
 
 % GPLVM
 
+if nargin < 7
+  lbls = [];
+end
 selectionCriterion = 'entropy';
-prior = 0;
 
 model = gplvmInit(X, Y, kernelType, noiseType, selectionCriterion, numActive);
-model = gplvmOptimise(model, prior, display, pointIters, extIters, kernIters);
+model = gplvmOptimise(model, options, lbls);

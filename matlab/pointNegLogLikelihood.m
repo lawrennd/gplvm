@@ -1,11 +1,13 @@
 function e = pointNegLogLikelihood(x, y, model, prior)
 
-% POINTNEGLOGLIKELIHOOD Wrapper function for calling likelihoods.
+% POINTNEGLOGLIKELIHOOD Wrapper function for calling noise likelihoods.
 
 % GPLVM
 
-e = - ivmLogLikelihood(model, x, y);
+L = ivmLogLikelihood(model, x, y);
 
-if prior
-  e =e +0.5*x*x';
+% check if there is a prior over kernel parameters
+if nargin > 3
+  L = L + priorLogProb(prior, x);
 end
+e = -L;
