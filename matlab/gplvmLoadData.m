@@ -41,9 +41,9 @@ switch dataset
   lbls = DataTrnLbls;
 
  %/~
- %case 'swissRoll'
- % load swiss_roll_data
- % Y = X_data(:, 1:1000)';
+ case 'swissRoll'
+  load swiss_roll_data
+  Y = X_data(:, 1:1000)';
  %~/
  case 'horse'
   load horse.dat;
@@ -67,8 +67,8 @@ switch dataset
   end
   
   %/~
-  %case 'pitch'
-  %load -ascii bballpitch.mat
-  %Y = bballpitch(:,8:end);
+  case 'pitch'
+   load -ascii bballpitch.mat
+   Y = bballpitch(:,8:end);
   %~/
 end
