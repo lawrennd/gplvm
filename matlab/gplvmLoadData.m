@@ -40,10 +40,11 @@ switch dataset
   Y = DataTrn;
   lbls = DataTrnLbls;
 
- case 'swissRoll'
-  load swiss_roll_data
-  Y = X_data(:, 1:1000)';
-
+ %/~
+ %case 'swissRoll'
+ % load swiss_roll_data
+ % Y = X_data(:, 1:1000)';
+ %~/
  case 'horse'
   load horse.dat;
   horse([133, 309], :) = [];
@@ -64,9 +65,10 @@ switch dataset
     va = var(Y(find(~isnan(Y(:, i))), i));
     Y(:, i) = Y(:, i)/va;
   end
-
- %/~
- %case 'pitch'
- %load -ascii bballpitch.mat
-  %~/Y = bballpitch(:,8:end);
+  
+  %/~
+  %case 'pitch'
+  %load -ascii bballpitch.mat
+  %Y = bballpitch(:,8:end);
+  %~/
 end
