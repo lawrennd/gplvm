@@ -3,13 +3,18 @@ function [Y, lbls] = gplvmLoadData(dataset)
 % GPLVMLOADDATA Load the a dataset.
 
 % GPLVM
-
+lbls = [];
 switch dataset
   case 'brendan'
    load frey_rawface.mat
    Y = double(ff)';
    
  case 'digits'
+
+  % Fix seeds
+  randn('seed', 1e5);
+  rand('seed', 1e5);
+
   load usps_train.mat
   % Extract 600 of digits 0 to 4
   [ALL_T, sortIndices] = sort(ALL_T);

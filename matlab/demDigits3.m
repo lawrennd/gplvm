@@ -10,8 +10,11 @@ importTool('ivm', 0.221);
 randn('seed', 1e5);
 rand('seed', 1e5);
 
+dataSetName = 'digits';
+experimentNo = 3;
+
 % load data
-[Y, lbls] = gplvmLoadData('digits');
+[Y, lbls] = gplvmLoadData(dataSetName);
 
 % Set IVM active set size and iteration numbers.
 numActive = 100;
@@ -29,10 +32,18 @@ kernelType = {'mlp', 'bias', 'white'};
 model = gplvmFit(X, Y, numActive, display, pointIters, ...
                  extIters, kernIters, noiseType, kernelType);
 
-% Visualise the results
-gplvmVisualise(model, lbls, 'imageVisualise', ...
-               'imageModify', [16 16]);
-
+% Save the results.
 X = model.X;  
 [kern, noise, ivmInfo] = ivmDeconstruct(model);
-save('demDigits3.mat', 'X', 'kern', 'noise', 'ivmInfo');
+capName = dataSetName;
+capName(1) = upper(capName(1));
+save(['dem' capName num2str experimentNo '.mat'], 'X', 'kern', 'noise', 'ivmInfo');
+
+% Load the results and display dynamically.
+gplvmResultsDynamic(dataSetName, experimentNo, 'image', [16 16], 1, 1, 1)
+
+% Load the results and display statically.
+% gplvmResultsStatic(dataSetName, experimentNo, 'image', [16 16], 1, 1, 1)
+
+% Load the results and display as scatter plot
+% gplvmResultsStatic(dataSetName, experimentNo, 'none')

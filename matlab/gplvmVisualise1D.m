@@ -9,7 +9,8 @@ numFrames = 10000;
 numData = size(model.y, 1);
 
 XTest = linspace(min(model.X(:, 1)), max(model.X(:, 1)), numFrames)';
-[testY, testYVar] = ivmPosteriorMeanVar(model, XTest);
+[mu, testYVar] = ivmPosteriorMeanVar(model, XTest);
+testY = noiseOut(model.noise, mu, testYVar);
 vars = sort(testYVar);
 pickPoint = ceil(0.75*numFrames);
 maxVar = vars(pickPoint);

@@ -1,8 +1,6 @@
 function model = gplvmIvm(X, theta, d)
 
 % GPLVMIVM THis code implements active set selection (via the IVM) for the GPLVM
-% GPLVM
-
 numData = size(X, 1);
 % Create storage for the kernel
 Kstore = zeros(numData, d);

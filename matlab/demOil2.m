@@ -10,15 +10,18 @@ importTool('ivm', 0.221);
 randn('seed', 1e5);
 rand('seed', 1e5);
 
-display = 0;
+dataSetName = 'oil';
+experimentNo = 2;
 
-[Y, lbls] = gplvmLoadData('oil');
+% load data
+[Y, lbls] = gplvmLoadData(dataSetName);
 
 % Set IVM active set size and iteration numbers.
 numActive = 100;
 kernIters = 100;
 pointIters = 100;
 extIters = 15;
+display = 0;
 
 % Initialise X with PCA.
 X = gplvmPcaInit(Y, 2);
@@ -39,9 +42,19 @@ kernelType = {'mlp', 'bias', 'white'};
 model = gplvmFit(X, Y, numActive, display, pointIters, ...
                  extIters, kernIters, noiseType, kernelType);
 
-% Visualise the results
-gplvmVisualise(model, lbls, 'vectorVisualise', 'vectorModify');
 
+% Save the results.
 X = model.X;  
 [kern, noise, ivmInfo] = ivmDeconstruct(model);
-save('demOil2.mat', 'X', 'kern', 'noise', 'ivmInfo');
+capName = dataSetName;
+capName(1) = upper(capName(1));
+save(['dem' capName num2str experimentNo '.mat'], 'X', 'kern', 'noise', 'ivmInfo');
+
+% Load the results and display dynamically.
+gplvmResultsDynamic(dataSetName, experimentNo, 'vector')
+
+% Load the results and display statically.
+% gplvmResultsStatic(dataSetName, experimentNo, 'vector')
+
+% Load the results and display as scatter plot
+% gplvmResultsStatic(dataSetName, experimentNo, 'none')

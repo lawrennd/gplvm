@@ -5,7 +5,6 @@ function model = gplvmFit(X, Y, numActive, display, pointIters, extIters, ...
 
 % GPLVM
 
-
 selectionCriterion = 'entropy';
 prior = 0;
 

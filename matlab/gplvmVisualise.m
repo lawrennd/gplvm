@@ -7,45 +7,21 @@ function gplvmVisualise(model, YLbls, ...
 
 global visualiseInfo
 
-symbol{1} = 'r+';
-symbol{2} = 'bo';
-symbol{3} = 'gx';
-symbol{4} = 'm*';
-symbol{5} = 'ys';
-symbol{6} = 'rd';
-symbol{7} = 'bV';
-symbol{8} = 'g^';
-symbol{9} = 'm<';
-symbol{10} = 'y>';
-
-activeX = model.X(model.I, :);
-activeY = model.y(model.I, :);
-
-numData = size(model.y, 1);
-%/~%if nargin < 6
-%  YLbls = ones(numData, 1);
-%~/%end
-
-x1 = linspace(min(model.X(:, 1))*1.1, max(model.X(:, 1))*1.1, 30);
-x2 = linspace(min(model.X(:, 2))*1.1, max(model.X(:, 2))*1.1, 30);
-[X1, X2] = meshgrid(x1, x2);
-XTest = [X1(:), X2(:)];
-[mu, varsigma] = ivmPosteriorMeanVar(model, XTest);
-testY = noiseOut(model.noise, mu, varsigma);
-testYPlot = testY;
-testYPlot(find(varsigma>prctile(varsigma(:, 1), 25))) =NaN;
-  
 figure(1)
 clf
-% Create the plot for the data
-clf
-visualiseInfo.plotAxes = axes('position', [0.05 0.05 0.9 0.9]);
-hold on
-[c, h] = contourf(X1, X2, log10(reshape(1./varsigma(:, 1), size(X1))), 128); 
-shading flat
-colormap gray;
-colorbar
-gplvmtwoDPlot(model.X, YLbls, symbol);
+visualiseInfo.plotAxes = gplvmScatterPlot(model, YLbls);
+
+%/~
+%activeX = model.X(model.I, :);
+%activeY = model.y(model.I, :);
+%~/
+
+%/~
+%numData = size(model.y, 1);
+%if nargin < 6
+%  YLbls = ones(numData, 1);
+%end
+%~/
 
 %/~
 %dataSet(1) = plot(X(:, 1), X(:, 2), 'r.')
@@ -116,23 +92,3 @@ hold off
 
 
 
-function returnVal = gplvmtwoDPlot(X, label, symbol)
-
-% GPLVMTWODPLOT Helper function for plotting the labels in 2-D.
-
-returnVal = [];
-
-if ~isempty(label)
-  for i = 1:size(X, 1)
-    labelNo = find(label(i, :));
-    try 
-      returnVal = [returnVal; plot(X(i, 1), X(i, 2), symbol{labelNo})];
-    catch
-      if strcmp(lasterr, 'Index exceeds matrix dimensions.')
-	error(['Only ' num2str(length(symbol)) ' labels supported (it''s easy to add more!)'])
-      end
-    end
-  end
-else
-  returnVal = plot(X(:, 1), X(:, 2), 'rx');
-end
