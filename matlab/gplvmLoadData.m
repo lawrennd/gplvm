@@ -65,7 +65,8 @@ switch dataset
     Y(:, i) = Y(:, i)/va;
   end
 
- %/~case 'pitch'
+ %/~
+ %case 'pitch'
  %load -ascii bballpitch.mat
-  %Y = bballpitch(:,8:end);
+  %~/Y = bballpitch(:,8:end);
 end
