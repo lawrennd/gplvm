@@ -1,11 +1,11 @@
-function [ax] = gplvmFantasyPlot(model, visualiseFunction, axesWidth, varargin);
+function [ax] = gplvmFantasyPlot(model, visualiseFunction, axesWidth, yAxesRatio, varargin);
 
 % GPLVMFANTASYPLOT Block plot of fantasy data.
 
 % GPLVM
 
-x1 = linspace(min(model.X(:, 1))*1.1, max(model.X(:, 1))*1.1, 45);
-x2 = linspace(min(model.X(:, 2))*1.1, max(model.X(:, 2))*1.1, 30);
+x1 = linspace(min(model.X(:, 1))*1.1, max(model.X(:, 1))*1.1, floor(yAxesRatio/axesWidth));
+x2 = linspace(min(model.X(:, 2))*1.1, max(model.X(:, 2))*1.1, floor(1/axesWidth));
 [X1, X2] = meshgrid(x1, x2);
 XTest = [X1(:), X2(:)];
 [mu, varsigma] = ivmPosteriorMeanVar(model, XTest);
@@ -13,7 +13,6 @@ testY = noiseOut(model.noise, mu, varsigma);
 testYPlot = testY;
 testYPlot(find(varsigma>prctile(varsigma(:, 1), 25))) =NaN;
 
-axesWidth = 1/30;
 figure(1)
 clf
 % Create the plot for the data
@@ -21,8 +20,8 @@ clf
 posit = [0.05 0.05 0.9 0.9];
 ax = axes('position', posit);
 hold on
-[c, h] = contourf(X1, X2, log10(reshape(1./varsigma(:, 1), size(X1))), 128); 
-shading flat
+%[c, h] = contourf(X1, X2, log10(reshape(1./varsigma(:, 1), size(X1))), 128); 
+%shading flat
 colormap gray;
 %colorbar
 xLim = [min(XTest(:, 1)) max(XTest(:, 1))];

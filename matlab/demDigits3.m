@@ -1,4 +1,4 @@
-% DEMDIGITS3 Model the digits data with a 2-D GPLVM.
+% DEMDIGITS3 Model the digits data with a 2-D MLP GPLVM.
 
 % GPLVM
 
@@ -16,17 +16,14 @@ experimentNo = 3;
 options = gplvmOptions;
 numActive = 100;
 
-% Initialise X with PCA
-X = gplvmPcaInit(Y, 2);
-
 % Fit the GP latent variable model
 noiseType = 'gaussian';
+selectionCriterion = 'entropy';
 kernelType = {'mlp', 'bias', 'white'};
-model = gplvmFit(X, Y, numActive, options, noiseType, kernelType, lbls);
+model = gplvmFit(Y, 2, options, kernelType, noiseType, selectionCriterion, numActive, lbls);
 
 % Save the results.
-X = model.X;  
-[kern, noise, ivmInfo] = ivmDeconstruct(model);
+[X, kern, noise, ivmInfo] = gplvmDeconstruct(model);
 capName = dataSetName;
 capName(1) = upper(capName(1));
 save(['dem' capName num2str(experimentNo) '.mat'], 'X', 'kern', 'noise', 'ivmInfo');

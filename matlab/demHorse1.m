@@ -1,4 +1,4 @@
-% DEMHORSE1 Model the horse data with a 2-D GPLVM.
+% DEMHORSE1 Model the horse data with a 2-D Linear GPLVM.
 
 % GPLVM
 
@@ -19,10 +19,10 @@ options = gplvmOptions;
 
 % because of small data-set, jointly optimise active points with kern params.
 options.gplvmKern = 1;
-options.kernIters = 50;
+options.kernIters = 100;
 
 % Because of ordered noise models, optimise noise too.
-options.noiseIters = 50;
+options.noiseIters = 100;
 
 orderedIndex = [1, 2, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 20];
 gaussianIndex = [3, 4, 5, 15, 18, 19, 21];
@@ -33,23 +33,14 @@ for i = gaussianIndex
   noiseType{i} = 'mgaussian';
 end
 
-% Initialise X with PCA.
-tempY = Y;
-for i = orderedIndex;
-  va = var(tempY(find(~isnan(tempY(:, i))), i));
-  tempY(:, i) = tempY(:, i)/sqrt(va);
-end
-X = gplvmPcaInit(tempY, 2);
-
-
-kernelType = {'rbf', 'bias', 'white'};
-
-model = gplvmFit(X, Y, numActive, options, noiseType, kernelType, lbls);
+options.initX = 'sppca';
+kernelType = {'lin', 'bias', 'white'};
+selectionCriterion = 'entropy';
+model = gplvmFit(Y, 2, options, kernelType, noiseType, selectionCriterion, numActive, lbls);
 
 
 % Save the results.
-X = model.X;  
-[kern, noise, ivmInfo] = ivmDeconstruct(model);
+[X, kern, noise, ivmInfo] = gplvmDeconstruct(model);
 capName = dataSetName;
 capName(1) = upper(capName(1));
 save(['dem' capName num2str(experimentNo) '.mat'], 'X', 'kern', 'noise', 'ivmInfo');

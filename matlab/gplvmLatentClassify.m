@@ -1,15 +1,18 @@
-function gplvmLatentClassify(dataset, experimentNo)
+function gplvmLatentClassify(dataset, experimentNo, seed)
 
-% GPLVMLATENTCLASSIFY Load a results file and visualise them dynamically.
+% GPLVMLATENTCLASSIFY Load a results file and classify using the latent space.
 
 % GPLVM
 
+if nargin < 3
+  seed = 1e5;
+end
 [Y, lbls] = gplvmLoadData(dataset);
 lbls = lbls*2 - 1;
 numLabels = size(lbls, 2);
 
-randn('seed', 1e5)
-rand('seed', 1e5)
+randn('seed', seed)
+rand('seed', seed)
 
 numData = size(Y, 1);
 dVal = min([300 numData]);
@@ -52,7 +55,7 @@ for trainData = 0:numLabels-1
                  noiseModel, selectionCriterion, dVal, ...
                  options);
   
-  % Make prediction for this digit.
+  % Make prediction for this class.
   [mu(:, index), varSigma(:, index)] = ivmPosteriorMeanVar(model, XTest);
   mu(:, index) = mu(:, index) + model.noise.bias;
   yPred = sign(mu(:, index));
@@ -62,8 +65,12 @@ for trainData = 0:numLabels-1
   % Deconstruct IVM for saving.
   [kernStore{index}, noiseStore{index}, ...
    ivmInfoStore{index}] = ivmDeconstruct(model);
-  save(['dem' dataset 'Classify' num2str(experimentNo)], 'testError', ...
-       'ivmInfoStore', 'kernStore', 'noiseStore')
+  if nargin > 2 
+    fileName = ['dem' dataset 'Classify' num2str(experimentNo) 'Seed' num2str(seed)];
+  else
+    fileName = ['dem' dataset 'Classify' num2str(experimentNo)];
+  end
+  save(fileName, 'testError', 'ivmInfoStore', 'kernStore', 'noiseStore')
 end
 overallTime = toc;
 
@@ -78,7 +85,12 @@ confusMat = zeros(numLabels);
 for i = 1:length(yPred)
   confusMat(yPred(i)+1, yTest(i)+1) = confusMat(yPred(i)+1, yTest(i)+1) + 1;
 end
-save(['dem' dataset 'Classify' num2str(experimentNo)], 'testError', ...
+if nargin > 2 
+  fileName = ['dem' dataset 'Classify' num2str(experimentNo) 'Seed' num2str(seed)];
+else
+  fileName = ['dem' dataset 'Classify' num2str(experimentNo)];
+end
+save(fileName, 'testError', ...
      'ivmInfoStore', 'kernStore', ...
      'noiseStore', 'overallError', ...
      'confusMat', 'overallTime');

@@ -2,8 +2,6 @@ function X = gplvmPcaInit(Y, dims)
 
 % GPLVMPCAINIT Initialise gplvm model with PCA.
 
-% GPLVM
-
 if ~any(any(isnan(Y)))
   [v, u] = pca(Y);
   v(find(v<0))=0;

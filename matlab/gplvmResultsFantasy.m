@@ -15,7 +15,7 @@ if size(model.X, 2) ==1
   error('not yet implemented fantasy 1-D visualisation')
 
 elseif size(model.X, 2) == 2
-  gplvmFantasyPlot(model, [dataType 'Visualise'], 0.015, varargin{:});
+  gplvmFantasyPlot(model, [dataType 'Visualise'], 0.05, 1.5, varargin{:});
 else
   error('no visualisation code for data of of this latent dimension');
 end

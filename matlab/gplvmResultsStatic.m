@@ -4,11 +4,7 @@ function gplvmResultsStatic(dataset, number, dataType, varargin)
 
 % GPLVM
 
-[Y, lbls] = gplvmLoadData(dataset);
-
-dataset(1) = upper(dataset(1));
-load(['dem' dataset num2str(number)])
-model = ivmReconstruct(kern, noise, ivmInfo, X, Y);
+[model, lbls] = gplvmLoadResult(dataSet, number);
 
 % Visualise the results
 if size(model.X, 2) ==1 
@@ -18,7 +14,7 @@ elseif size(model.X, 2) == 2
   if strcmp(dataType, 'none')
     gplvmScatterPlot(model, lbls);
   else
-    gplvmStaticImageVisualise(model, [dataType 'Visualise'], 0.015, varargin{:});
+    gplvmStaticImageVisualise(model, [dataType 'Visualise'], 0.03, varargin{:});
   end
 
 else

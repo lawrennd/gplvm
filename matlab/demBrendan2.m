@@ -1,4 +1,4 @@
-% DEMBRENDAN2 Model the face data with a 1-D GPLVM.
+% DEMBRENDAN2 Model the face data with a 1-D RBF GPLVM.
 
 % GPLVM
 
@@ -16,17 +16,14 @@ experimentNo = 2;
 options = gplvmOptions;
 numActive = 100;
 
-% Initialise X with PCA
-X = gplvmPcaInit(Y, 1);
-
 % Fit the GP latent variable model
 noiseType = 'gaussian';
+selectionCriterion = 'entropy';
 kernelType = {'rbf', 'bias', 'white'};
-model = gplvmFit(X, Y, numActive, options, noiseType, kernelType, lbls);
+model = gplvmFit(Y, 1, options, kernelType, noiseType, selectionCriterion, numActive, lbls);
 
 % Save the results.
-X = model.X;  
-[kern, noise, ivmInfo] = ivmDeconstruct(model);
+[X, kern, noise, ivmInfo] = gplvmDeconstruct(model);
 capName = dataSetName;
 capName(1) = upper(capName(1));
 save(['dem' capName num2str(experimentNo) '.mat'], 'X', 'kern', 'noise', 'ivmInfo');

@@ -1,4 +1,4 @@
-% DEMOIL4 Model the oil data with a 2-D GPLVM using RBF kernel and normal uniform latent prior.
+% DEMOIL5 Model the oil data with probabilistic PCA.
 
 % GPLVM
 
@@ -12,14 +12,8 @@ experimentNo = 5;
 % load data
 [Y, lbls] = gplvmLoadData(dataSetName);
 
-% Set IVM active set size and iteration numbers.
-options = gplvmOptions;
-options.prior.type = 'normuni';
-options.prior = priorParamInit(options.prior);
-numActive = 100;
-
-% Initialise X with PCA.
-X = gplvmPcaInit(Y, 2);
+% Model with PPCA.
+X = gplvmPpcaInit(Y, 2);
 
 capName = dataSetName;
 capName(1) = upper(capName(1));

@@ -1,6 +1,8 @@
 function point = invGetNormAxesPoint(axesPoint, axesHandle)
 
-% INVGETNORMAXESPOINT Take a point on a plot and return a point within the figure
+% INVGETNORMAXESPOINT Take a point on a plot and return a point within the figure.
+
+% GPLVM 
 
 position = get(axesHandle, 'Position');
 xLim = get(axesHandle, 'XLim');

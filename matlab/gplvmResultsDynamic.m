@@ -4,11 +4,7 @@ function gplvmResultsDynamic(dataset, number, dataType, varargin)
 
 % GPLVM
   
-[Y, lbls] = gplvmLoadData(dataset);
-
-dataset(1) = upper(dataset(1));
-load(['dem' dataset num2str(number)])
-model = ivmReconstruct(kern, noise, ivmInfo, X, Y);
+[model, lbls] = gplvmLoadResult(dataSet, number);
 
 % Visualise the results
 switch size(model.X, 2) 
