@@ -52,7 +52,7 @@ capName(1) = upper(capName(1));
 save(['dem' capName num2str experimentNo '.mat'], 'X', 'kern', 'noise', 'ivmInfo');
 
 % Load the results and display dynamically.
-gplvmResultsDynamic(dataSetName, experimentNo, 'vector')
+gplvmResultsDynamic(dataSetName, experimentNo, 'vector3')
 
 % Load the results and display statically.
 % gplvmResultsStatic(dataSetName, experimentNo, 'vector')

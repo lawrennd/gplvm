@@ -39,4 +39,8 @@ switch dataset
   load 3Class
   Y = DataTrn;
   lbls = DataTrnLbls;
+
+ case 'swissRoll'
+  load swiss_roll_data
+  Y = X_data(:, 1:1000)';
 end
