@@ -12,10 +12,7 @@ rand('seed', 1e5);
 
 display = 0;
 
-load 3Class
-
-Y = DataTrn;
-lbls = DataTrnLbls;
+[Y, lbls] = gplvmLoadData('oil');
 
 % Set IVM active set size and iteration numbers.
 numActive = 100;

@@ -1,6 +1,5 @@
 % GPLVMOIL Model the oil data with a 2-D GPLVM.
 
-% GPLVM
 
 %/~
 importTool('ivm');

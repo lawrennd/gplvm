@@ -1,6 +1,5 @@
 % GPLVMBRENDAN Model the face data with a 2-D GPLVM.
 
-% GPLVM
 
 %/~
 addpath('../../ivm/matlab');

@@ -1,3 +1,5 @@
+% HORSEDATA Load the horse data.
+
 load horse.dat
 ordinalAtr = [1 2 7 8 9 10 11 12 13 14 15 17 18 21];
 horse(:, ordinalAtr) = horse(:, ordinalAtr) - 1;
