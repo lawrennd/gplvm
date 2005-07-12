@@ -5,12 +5,26 @@ function [Y, lbls] = gplvmLoadData(dataset)
 % GPLVM
 lbls = [];
 switch dataset
-  case 'brendan'
-   load frey_rawface.mat
-   Y = double(ff)';
-   
- case 'digits'
+ 
+ case 'run1'
+  [Y, connect] = mocapLoadData('run1');
+  Y = Y(1:4:end, :);
 
+
+ case 'ratemaps'
+  % Fix seeds
+  Y = loadRateMap('../data/ratemaps')';
+  Y = Y(1:10000, :);
+ case 'cepstral'
+  Y = load('../data/cepvecs');
+  Y = Y(1:5000, :);
+ 
+ case 'brendan'
+  load frey_rawface.mat
+  Y = double(ff)';
+  
+ case 'digits'
+  
   % Fix seeds
   randn('seed', 1e5);
   rand('seed', 1e5);
@@ -40,11 +54,21 @@ switch dataset
   Y = DataTrn;
   lbls = DataTrnLbls;
 
- %/~
+ case 'oil100'
+  randn('seed', 1e5);
+  rand('seed', 1e5);
+  load 3Class
+  Y = DataTrn;
+  lbls = DataTrnLbls;
+  indices = randperm(size(Y, 1));
+  indices = indices(1:100);
+  Y = Y(indices, :);
+  lbls = lbls(indices, :);
+
  case 'swissRoll'
   load swiss_roll_data
   Y = X_data(:, 1:1000)';
- %~/
+ 
  case 'horse'
   load horse.dat;
   horse([133, 309], :) = [];

@@ -51,7 +51,8 @@ set(gcf, 'WindowButtonMotionFcn', 'classVisualise(''move'')')
 
 figure(2)
 clf
-if length(varargin)>0
+
+if strcmp(visualiseFunction(1:5), 'image') & length(varargin)>0
   set(gcf, 'menubar', 'none')
   xPixels = 115;
   yPixels = 115;
@@ -64,8 +65,13 @@ else
   imageAxesa =subplot(1, 1, 1);
 end
 visData = zeros(1,size(model.y, 2));
-visData(1) = min(min(model.y));
-visData(end) = max(max(model.y));
+if(strcmp(visualiseFunction(1:5), 'image'))
+  visData(1) = min(min(model.y));
+  visData(end) = max(max(model.y));
+else
+  visData = model.y(1, :);
+end
+
 visHandle = feval(visualiseFunction, visData, varargin{:});
 set(visHandle, 'erasemode', 'xor')
 colormap gray

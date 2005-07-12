@@ -1,6 +1,4 @@
-% DEMOILGTM For visualising oil data --- uses NETLAB toolbox.
-
-% DEMOIL100 Model the oil data with a 2-D GPLVM using MLP kernel.
+% DEMOIL100 Model the oil data with a 2-D GPLVM using RBF kernel.
 
 % Fix seeds
 randn('seed', 1e5);
@@ -24,7 +22,7 @@ numActive = 100;
 
 % Optimise kernel parameters and active set jointly.
 options.gplvmKern = 1;
-options.kernIters = 1000;
+options.kernIters = 20;
 options.extIters = 1;
 % Display iterations
 options.display = 1;
@@ -42,9 +40,11 @@ end
 
 % Fit the GP latent variable model
 noiseType = 'gaussian';
-kernelType = {'mlp', 'bias', 'white'};
-model = gplvmFit(X, Y, numActive, options, noiseType, kernelType, lbls);
+kernelType = 'sqexp';%{'rbf', 'bias', 'white'};
+model = gplvmFit(Y, 2, options, kernelType, noiseType, 'entropy', ...
+                 numActive, lbls);
 
+error('Stop here please')
 
 % Save the results.
 X = model.X;  

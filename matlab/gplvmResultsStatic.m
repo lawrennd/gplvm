@@ -1,4 +1,4 @@
-function gplvmResultsStatic(dataset, number, dataType, varargin)
+function gplvmResultsStatic(dataSet, number, dataType, varargin)
 
 % GPLVMRESULTSSTATIC Load a results file and visualise them dynamically.
 

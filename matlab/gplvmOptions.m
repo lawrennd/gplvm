@@ -16,6 +16,9 @@ options.noiseIters = 0;
 % Number of optimisation iterations for non-active latent points.
 options.pointIters = 100;
 
+% Number of optimisation iterations for non-active points assuming data is temporal
+options.temporalPointIters = 0;
+
 % Number of optimisation iterations for active latent points.
 options.activeIters = 0;
 

@@ -23,6 +23,7 @@ for iterNum = 1:options.extIters
     model = ivmOptimiseIVM(model, options.display);
     % Update the kernel.
     if options.gplvmKern
+      % Make sure we don't also do another active set optimisation.
       options.activeIters = 0;
       % Optimise the active points together with the kernel params.
       model = gplvmOptimiseKernel(model, prior, options.display, ...
@@ -38,6 +39,7 @@ for iterNum = 1:options.extIters
       end
       
     else
+      % Just optimise the kernel parameters (we can do this with the IVM)
       model = ivmOptimiseKernel(model, options.display, ...
                                 options.kernIters);
     end
@@ -111,6 +113,36 @@ for iterNum = 1:options.extIters
     for i = model.J(:)'
       counter = counter + 1;
       model = gplvmOptimisePoint(model, i, prior, options.display, options.pointIters);
+      if options.display > 1
+        if size(model.X, 2) == 2
+          set(points(i), 'Xdata', model.X(i, 1));
+          set(points(i), 'Ydata', model.X(i, 2));
+          drawnow
+        end
+      end
+      if ~rem(counter, floor(length(model.J)/10))
+        fprintf('Finished point %d\n', counter)
+      end      
+    end
+  end
+  % Optimise the non-active set using an assumption of temporal
+  % continuity if required.
+  if options.temporalPointIters & length(model.J)
+    if options.display > 1
+      points = gplvm2dPlot(model, lbls);
+    end
+    model = ivmOptimiseIVM(model, options.display);
+
+    % Iterate through the data updating X positions.
+    counter = 0;
+    Jsort = sort(model.J(:));
+    for i = Jsort'
+      counter = counter + 1;
+      if i>1
+        % initalise optimisation with previous point in sequence.
+        model.X(i, :) = model.X(i-1, :);
+      end
+      model = gplvmOptimisePoint(model, i, prior, options.display, options.temporalPointIters);
       if options.display > 1
         if size(model.X, 2) == 2
           set(points(i), 'Xdata', model.X(i, 1));

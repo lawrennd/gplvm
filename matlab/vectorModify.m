@@ -1,4 +1,4 @@
-function vectorModify(handle, values)
+function handle = vectorModify(handle, values)
 
 % VECTORMODIFY Helper code for visualisation of vectorial data.
 

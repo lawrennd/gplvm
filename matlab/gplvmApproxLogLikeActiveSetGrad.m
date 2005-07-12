@@ -1,6 +1,6 @@
 function g = gplvmApproxLogLikeActiveSetGrad(model)
 
-% GPLVMAPPROXLOGLIKEACTIVESETGRAD Gradient of the approximate likelihood wrt kernel parameters.
+% GPLVMAPPROXLOGLIKEACTIVESETGRAD Gradient of the approximate likelihood wrt active set.
 
 % GPLVM
 
@@ -21,3 +21,30 @@ for j = 1:size(m, 2)
   covGrad = feval([model.type 'CovarianceGradient'], invK, m(:, j));
   g = g + activeSetGradient(model, covGrad);
 end  
+
+function g = activeSetGradient(model, covGrad)
+
+% ACTIVESETGRADIENT Gradient of the kernel with respect to its active points.
+
+% GPLVM
+
+xDim = size(model.X, 2);
+g = zeros(length(model.I), xDim);
+Xactive = model.X(model.I, :);
+
+gx = kernGradX(model.kern, Xactive, Xactive);
+% The 2 accounts for the fact that covGrad is symmetric.
+gx = gx*2;
+% gx has assumed that n is not in model.I, fix that here.
+dgx = kernDiagGradX(model.kern, Xactive);
+for i = 1:length(model.I)
+  gx(i, :, i) = dgx(i, :);
+end
+
+for i = 1:length(model.I)
+  n = model.I(i);
+  for j = 1:xDim
+    g(i, j) = gx(:, j, i)'*covGrad(:, i);
+  end
+end
+g = g(:)';

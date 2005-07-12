@@ -2,8 +2,6 @@ function g = activeSetGradient(model, covGrad)
 
 % ACTIVESETGRADIENT Gradient of the kernel with respect to its active points.
 
-% GPLVM
-
 xDim = size(model.X, 2);
 g = zeros(length(model.I), xDim);
 for i = 1:length(model.I)

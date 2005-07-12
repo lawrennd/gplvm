@@ -2,6 +2,15 @@
 
 Expected code updates in the near future: different kernels associated with each dimension of the IVM code (update to take place in IVM toolbox). 
 
+A note on speed issues:
+
+This toolbox is designed to be flexible, not fast. Large improvements in running speed can be obtained by removing that flexibility (e.g. by fixing the kernel type and the noise model etc.).
+
+Version 2.011 Release Notes
+---------------------------
+
+Last release was missing file gplvmInitX.m and there was a bug in the gplvmDynamicResults function, dataset in the function command should be dataSet. Thanks to Guodong Liu for pointing these out. 
+
 
 Version 2.01 Release Notes
 --------------------------

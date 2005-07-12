@@ -13,8 +13,17 @@ switch call
   [x, y]  = localCheckPointPosition(visualiseInfo);  
   if ~isempty(x) 
     % This should be changed to a model specific visualisation.
-    [mu, varsigma] = ivmPosteriorMeanVar(visualiseInfo.model, [x y]);
-    Y = noiseOut(visualiseInfo.model.noise, mu, varsigma);
+    fhandle = str2func([visualiseInfo.model.type 'PosteriorMeanVar']);
+    if str2num(version('-release'))>13
+      [mu, varsigma] = fhandle(visualiseInfo.model, [x y]);
+    else 
+      [mu, varsigma] = feval(fhandle, visualiseInfo.model, [x y]);
+    end
+    if isfield(visualiseInfo.model, 'noise')
+      Y = noiseOut(visualiseInfo.model.noise, mu, varsigma);
+    else
+      Y = mu;
+    end
     feval(visualiseInfo.visualiseModify, visualiseInfo.visHandle, Y, visualiseInfo.varargin{:});
   end
 end
