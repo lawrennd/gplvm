@@ -43,11 +43,18 @@ ySpan = yLim(2) - yLim(1);
 
 set(visualiseInfo.plotAxes, 'XLim', xLim)
 set(visualiseInfo.plotAxes, 'YLim', yLim)
+
+visualiseInfo.latentHandle = line(0, 0, 'markersize', 20, 'color', ...
+                                  [0 0 0], 'marker', '.', 'visible', ...
+                                  'on', 'erasemode', 'xor');
+visualiseInfo.clicked = 0;
+
 visualiseInfo.digitAxes = [];
 visualiseInfo.digitIndex = [];
 
 % Set the callback function
-set(gcf, 'WindowButtonMotionFcn', 'classVisualise(''move'')')
+set(gcf, 'WindowButtonMotionFcn', 'gplvmClassVisualise(''move'')')
+set(gcf, 'WindowButtonDownFcn', 'gplvmClassVisualise(''click'')')
 
 figure(2)
 clf
@@ -69,7 +76,8 @@ if(strcmp(visualiseFunction(1:5), 'image'))
   visData(1) = min(min(model.y));
   visData(end) = max(max(model.y));
 else
-  visData = model.y(1, :);
+  [void, indMax]= max(sum((model.y.*model.y), 2));
+  visData = model.y(indMax, :);
 end
 
 visHandle = feval(visualiseFunction, visData, varargin{:});
