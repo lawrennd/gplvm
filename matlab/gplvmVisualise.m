@@ -11,23 +11,10 @@ figure(1)
 clf
 visualiseInfo.plotAxes = gplvmScatterPlot(model, YLbls);
 
-%/~
-%activeX = model.X(model.I, :);
-%activeY = model.y(model.I, :);
-%~/
+visualiseInfo.latentHandle = line(0, 0, 'markersize', 20, 'color', ...
+                                  [0 0 0], 'marker', '.', 'visible', ...
+                                  'on', 'erasemode', 'xor');
 
-%/~
-%numData = size(model.y, 1);
-%if nargin < 6
-%  YLbls = ones(numData, 1);
-%end
-%~/
-
-%/~
-%dataSet(1) = plot(X(:, 1), X(:, 2), 'r.')
-%set(visualiseInfo.dataSet(1), 'MarkerSize', 10)
-%hold on
-%~/
 % Set up the X limits and Y limits of the main plot
 xLim = [min(model.X(:, 1)) max(model.X(:, 1))];
 xSpan = xLim(2) - xLim(1);
@@ -44,9 +31,6 @@ ySpan = yLim(2) - yLim(1);
 set(visualiseInfo.plotAxes, 'XLim', xLim)
 set(visualiseInfo.plotAxes, 'YLim', yLim)
 
-visualiseInfo.latentHandle = line(0, 0, 'markersize', 20, 'color', ...
-                                  [0 0 0], 'marker', '.', 'visible', ...
-                                  'on', 'erasemode', 'xor');
 visualiseInfo.clicked = 0;
 
 visualiseInfo.digitAxes = [];
@@ -64,12 +48,12 @@ if strcmp(visualiseFunction(1:5), 'image') & length(varargin)>0
   xPixels = 115;
   yPixels = 115;
   set(gcf, 'position', [232 572 xPixels yPixels/varargin{1}(1)*varargin{1}(2)])
-  imageAxesa = subplot(1, 1, 1);
+  visualiseInfo.visualiseAxes = subplot(1, 1, 1);
   xWidth = varargin{1}(1)/xPixels;
   yHeight = varargin{1}(2)/yPixels;
-  set(imageAxesa, 'position', [0.5-xWidth/2 0.5-yHeight/2 xWidth yHeight])
+  set(visualiseInfo.visualiseAxes, 'position', [0.5-xWidth/2 0.5-yHeight/2 xWidth yHeight])
 else
-  imageAxesa =subplot(1, 1, 1);
+  visualiseInfo.visualiseAxes =subplot(1, 1, 1);
 end
 visData = zeros(1,size(model.y, 2));
 if(strcmp(visualiseFunction(1:5), 'image'))
@@ -83,13 +67,13 @@ end
 visHandle = feval(visualiseFunction, visData, varargin{:});
 set(visHandle, 'erasemode', 'xor')
 colormap gray
-set(imageAxesa, 'visible', 'off')
 
 %/~
-%imageAxesa = axes('position', [0.95 0.05 0.05 0.05]);
+%set(visualiseInfo.visualiseAxes, 'visible', 'off')
+%visualiseInfo.visualiseAxes = axes('position', [0.95 0.05 0.05 0.05]);
 %visualiseInfo.visHandle = feval(visualiseFunction, Y(1, :), varargin{:});
 %colorMap gray
-%set(imageAxesa, 'visible', 'off')
+%set(visualiseInfo.visualiseAxes, 'visible', 'off')
 %~/
 % Pass the data to visualiseInfo
 visualiseInfo.model = model;
