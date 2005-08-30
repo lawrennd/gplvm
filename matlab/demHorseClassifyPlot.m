@@ -11,7 +11,11 @@ for seed = 1:10
   end
 end
 colordef white
-plotLines = errorbar(2:8, mean(allRes), sqrt(var(allRes)));
+plotLines = [];
+for i = 1:10
+    plotLines = [plotLines; plot(2:8, allRes, 'x-')]
+end
+%plotLines = errorbar(2:8, mean(allRes), sqrt(var(allRes)));
 set(plotLines, 'linewidth', 2)
 set(gca, 'ylim', [0.29 0.37])
 set(gca, 'xlim', [1.5 8.5])
