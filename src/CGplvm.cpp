@@ -1,3 +1,590 @@
 #include "CGplvm.h"
 
+
+CGplvm::CGplvm(CKern& kernel, CScaleNoise& nois, const int latDim, const int verbos) : kern(kernel), noise(nois), latentDim(latDim), invKupToDate(false), KupToDate(false)
+{
+  setInputScaleLearnt(false);
+  setLatentRegularised(true);
+  setVerbosity(verbos);
+  dataDim=noise.getNumProcesses();
+  numData=noise.getNumData();
+  initStoreage();
+  initVals();
+}
+
+void CGplvm::initStoreage()
+{
+  X.resize(numData, latentDim);
+  m.resize(numData, dataDim);
+  beta.resize(numData, dataDim);
+  nu.resize(numData, dataDim);
+  g.resize(numData, dataDim);
+  K.resize(numData, numData);
+  invK.resize(numData, numData);
+  L.resize(numData, numData);
+  for(int i=0; i<numData; i++)
+    gX.push_back(new CMatrix(numData, latentDim));
+  gDiagX.resize(numData, latentDim);
+  covGrad.resize(numData, numData);
+    
+}
+
+void CGplvm::initVals()
+{
+  for(int i=0; i<numData; i++)
+    noise.updateSites(m, beta, i, nu, g, i);
+  initX();
+}
+void CGplvm::initXrand()
+{
+  X.randn(0.001, 0.0);
+}
+
+void CGplvm::initX()
+{
+  initXpca();
+  setKupToDate(false);
+}
+void CGplvm::initXpca()  // pca style initialisation.
+{
+  CMatrix ymean = meanCol(m);
+  CMatrix covm(m.getCols(), m.getCols());
+  covm.setSymmetric(true);
+  covm.syrk(m, 1.0/(double)m.getRows(), 0.0, "u", "t");  
+  ymean.trans();
+  covm.syr(ymean, -1.0, "u");
+  CMatrix eigVals(1, m.getCols());
+  covm.syev(eigVals, "v", "u");
+  CMatrix Winv(m.getCols(), latentDim);
+  for(int i=0; i<latentDim; i++)
+    {
+      Winv.copyColCol(i, covm, m.getCols()-1-i);
+      Winv.scaleCol(i, 1/sqrt(eigVals.getVal(m.getCols()-1-i)));
+    }
+  X.gemm(m, Winv, 1.0, 0.0, "n", "n");
+  CMatrix meanX = meanCol(X);
+  for(int i=0; i<X.getRows(); i++)
+    X.axpyRowRow(i, meanX, 0, -1.0);
+  setKupToDate(false);
+}
+
+void CGplvm::out(CMatrix& yPred, const CMatrix& inData) const
+{
+
+}
+
+void CGplvm::out(CMatrix& yPred, CMatrix& probPred, const CMatrix& inData) const
+{
+}
+
+void CGplvm::posteriorMeanVar(CMatrix& mu, CMatrix& varSigma, const CMatrix& Xin) const
+{
+  assert(mu.getCols()==dataDim);
+  assert(varSigma.getCols()==dataDim);
+  CMatrix kX(numData, Xin.getRows());
+  updateK();
+  updateInvK();
+
+  kern.compute(kX, X, Xin);
+  kX.trsm(L, 1.0, "L", "L", "N", "N"); // now it is Linvk
+  for(int i=0; i<Xin.getRows(); i++)
+    {
+      double vsVal = kern.diagComputeElement(Xin, i) - kX.norm2Col(i);
+      assert(vsVal>=0);
+      for(int j=0; j<dataDim; j++)
+	varSigma.setVal(vsVal, i, j);	    
+    }
+  kX.trsm(L, 1.0, "L", "L", "T", "N"); // now it is Kinvk
+  mu.gemm(kX, m, 1.0, 0.0, "T", "N");
+}
+
+
+// Gradient routines
+void CGplvm::updateCovGradient(int index) const
+{
+  // computes: 0.5*(invK * Y(:,index) * Y^t(:,index) * invK - invK)
+
+  CMatrix invKm(invK.getRows(), 1);
+  invKm.symvColCol(0, invK, m, index, 1.0, 0.0, "u"); // invKm = invK*m(:,index)
+  covGrad.deepCopy(invK);                             // covgrad = invK
+  // WVB: isn't there a missing covGrad.scale(getNumProcesses)) here?
+  covGrad.syr(invKm, -1.0, "u");                 // covGrad -= invKm * invKm^t
+  covGrad.scale(-0.5);                           // covGrad *= -0.5
+}
+
+
+void CGplvm::updateK() const
+{
+  // WVB ADDED   -- i think this was a bug in the original
+  //                it used ~ instead of !, so always was true
+  //int tt = ~isKupToDate();
+  if(!isKupToDate())
+  {
+    double kVal=0.0;
+    for(int i=0; i<numData; i++)
+	{
+	  K.setVal(kern.diagComputeElement(X, i), i, i);
+	  for(int j=0; j<i; j++)
+      {
+        kVal=kern.computeElement(X, i, X, j);
+        K.setVal(kVal, i, j);
+        K.setVal(kVal, j, i);
+      }
+	}
+    K.setSymmetric(true);
+    setKupToDate(true);
+  }
+}
+
+// update invK with the inverse of the kernel plus beta terms computed from the active points.
+void CGplvm::updateInvK(const int dim) const
+{
+  // WVB ADDED   -- i think this was a bug in the original
+  //                it used ~ instead of !, so always was true
+  //int tt = ~isInvKupToDate();
+  if(!isInvKupToDate())
+  {
+    L.deepCopy(K);
+    // 
+    //for(int i=0; i<numData; i++)
+    //  invK.setVal(invK.getVal(i, i) + 1/getBetaVal(i, dim), i, i);
+    L.chol(); /// this will initially be upper triangular.
+    invK.setSymmetric(true);
+    logDetK = invK.logDet(L); 
+    invK.pdinv(L);
+    invK.setSymmetric(true);
+    L.trans();
+    setInvKupToDate(true);
+  }
+}
+
+// compute the approximation to the log likelihood.
+double CGplvm::logLikelihood() const
+{
+  updateK();
+  updateInvK();
+  double L=0.0;
+  CMatrix invKm(invK.getRows(), 1);
+  for(int j=0; j<dataDim; j++)
+  {
+    invKm.symvColCol(0, invK, m, j, 1.0, 0.0, "u");      
+    L+=logDetK + invKm.dotColCol(0, m, j);
+  }
+  if(isLatentRegularised())
+  {
+    // Introduce a penalty for columns with big magnitude
+    // == Sum_i Sum_j X_ij ^2
+    for(int j=0; j<getLatentDim(); j++)
+	{
+	  L+=X.norm2Col(j);
+	}
+  }
+  if(isInputScaleLearnt())
+  {
+    // scales lead to terms of the form log w_j to be added.
+    for(int j=0; j<dataDim; j++)
+      L+=2*log(abs(noise.getScale(j)));
+  }
+  L*=-0.5;
+  L+=kern.priorLogProb();
+  return L;
+}
+// compute the gradients of the approximation wrt parameters.
+void CGplvm::logLikelihoodGradient(CMatrix& g) const
+{
+  int numKernParams = kern.getNumParams();
+  g.zeros();
+  updateK();
+  updateInvK();
+  kern.getGradX(gX, X, X);
+  kern.getDiagGradX(gDiagX, X);
+  for(int i=0; i<numData; i++)
+  {
+    gX[i]->scale(2.0); // accounts for symmetric covariance
+    for(int j=0; j<latentDim; j++)
+	{
+	  gX[i]->setVal(gDiagX.getVal(i, j), i, j); // deal with diagonal.
+	}
+  }
+  CMatrix tempG(1, numKernParams);
+  for(int j=0; j<dataDim; j++)
+  {
+    updateCovGradient(j);
+    kern.getGradTransParams(tempG, X, covGrad);
+    for(int i=0; i<numKernParams; i++)
+	{
+	  g.addVal(tempG.getVal(i), i);
+	}
+    for(int i=0; i<numData; i++)
+	{
+	  for(int k=0; k<latentDim; k++)
+      {
+        int ind = numKernParams+i+numData*k;
+        g.addVal(gX[i]->dotColCol(k, covGrad, i), ind);
+      }
+	}
+  }
+  if(isLatentRegularised())
+  {
+    for(int i=0; i<numData; i++)
+      for(int k=0; k<latentDim; k++)
+      {
+        int ind = numKernParams+i+numData*k;
+        g.addVal(-X.getVal(i, k), ind);
+      } 
+  }
+  if(isInputScaleLearnt())
+    for(int j=0; j<getNumProcesses(); j++)
+    {
+      // recomputing this again is inefficient (it is already done in the likelihood).
+      CMatrix invKm(m.getRows(), 1);
+      invKm.symvColCol(0, invK, m, j, 1.0, 0.0, "u");      
+      g.setVal(1/noise.getScale(j)*(invKm.dotColCol(0, m, j)-1), numKernParams+numData*latentDim+j);
+    }
+
+}
+void CGplvm::pointLogLikelihood(const CMatrix& y, const CMatrix& X) const
+{
   
+}
+// Optimise the GPLVM with respect to latent positions and kernel parameters.
+void CGplvm::optimise(const int iters)
+{
+  if(getVerbosity()>2)
+    {
+      cout << "Initial model:" << endl;
+      display(cout);
+    }
+  if(getVerbosity()>2 && getOptNumParams()<40)
+    checkGradients();
+
+  scgOptimise(iters);
+  if(getVerbosity()>1)
+    cout << "... done. " << endl;
+  if(getVerbosity()>0)
+    display(cout);
+}
+
+bool CGplvm::equals(const CGplvm& model, const double tol) const
+{
+  throw ndlexceptions::Error("equals not yet implemented for GPLVM.");
+}
+
+void CGplvm::display(ostream& os) const
+{
+  cout << "GPLVM Model: " << endl;
+  cout << "Data Set Size: " << numData << endl;
+  cout << "Kernel Type: " << endl;
+  cout << "Latent space regularised: " << isLatentRegularised() << endl;
+  cout << "Scales learnt: " << isInputScaleLearnt() << endl;
+  kern.display(os);
+  noise.display(os);
+}
+
+
+// Functions which operate on the object
+void writeGplvmToStream(const CGplvm& model, ostream& out)
+{
+  out << "gplvmVersion=" << GPLVMVERSION << endl;
+  out << "numData=" << model.getNumData() << endl;
+  out << "numProcesses=" << model.getNumProcesses() << endl;
+  out << "latentDim=" << model.getLatentDim() << endl;
+  writeKernToStream(model.kern, out);
+  writeNoiseToStream(model.noise, out);
+  out << "Y:" << model.getNumProcesses() << ",X:" << model.getLatentDim();
+  if(model.isLabels())
+    out << ",labels:1" << endl;
+  else
+    out << endl;
+  for(int i=0; i<model.getNumData(); i++)
+    {
+      for(int j=0; j<model.getNumProcesses(); j++)
+	{
+ 	  out << model.noise.getTarget(i, j) << " ";	  
+	}
+      for(int j=0; j<model.getLatentDim(); j++)
+ 	{
+ 	  out << model.X.getVal(i, j) << " ";
+ 	}
+      if(model.isLabels())
+	{
+	  out << model.getLabel(i) << endl;
+	}
+      else
+	out << endl;
+    }
+
+}
+
+void writeGplvmToFile(const CGplvm& model, const string modelFileName, const string comment)
+{
+  if(model.getVerbosity()>0)
+    cout << "Saving model file." << endl;
+  ofstream out(modelFileName.c_str());
+  if(!out) throw ndlexceptions::FileWriteError(modelFileName);
+  out << setiosflags(ios::scientific);
+  out << setprecision(17);
+  if(comment.size()>0)
+    out << "# " << comment << endl;
+  writeGplvmToStream(model, out);
+  out.close();
+
+}
+
+CGplvm* readGplvmFromStream(istream& in)
+{
+  string line;
+  vector<string> tokens;
+  // first line is version info.
+  ndlstrutil::getline(in, line);
+  ndlstrutil::tokenise(tokens, line, "=");
+  if(tokens.size()>2 || tokens[0]!="gplvmVersion")
+    throw ndlexceptions::FileFormatError();
+  if(tokens[1]!="0.1")
+    throw ndlexceptions::FileFormatError();
+
+  // next line is number of data
+  tokens.clear();
+  ndlstrutil::getline(in, line);
+  ndlstrutil::tokenise(tokens, line, "=");
+  if(tokens.size()>2 || tokens[0]!="numData")
+    throw ndlexceptions::FileFormatError();
+  int numData=atoi(tokens[1].c_str());
+
+  // next line is number of processes
+  tokens.clear();
+  ndlstrutil::getline(in, line);
+  ndlstrutil::tokenise(tokens, line, "=");
+  if(tokens.size()>2 || tokens[0]!="numProcesses")
+    throw ndlexceptions::FileFormatError();
+  int dataDim=atoi(tokens[1].c_str());
+  
+  // next line is latent dimension
+  tokens.clear();
+  ndlstrutil::getline(in, line);
+  ndlstrutil::tokenise(tokens, line, "=");
+  if(tokens.size()>2 || tokens[0]!="latentDim")
+    throw ndlexceptions::FileFormatError();
+  int latentDim=atoi(tokens[1].c_str());
+
+
+  CKern* pkern = readKernFromStream(in);
+  CScaleNoise* pnoise = (CScaleNoise*)readNoiseFromStream(in);
+  
+  tokens.clear();
+  ndlstrutil::getline(in, line);
+  ndlstrutil::tokenise(tokens, line, ",");
+  bool labelsPresent = false;
+  vector<string> subTokens;
+  for(int i=0; i<tokens.size(); i++)
+    {
+      subTokens.clear();
+      ndlstrutil::tokenise(subTokens, tokens[i], ":");
+      if(subTokens[0]=="Y")
+	{
+	  if(atoi(subTokens[1].c_str())!=dataDim)
+	    throw ndlexceptions::FileFormatError();
+	}
+      else if(subTokens[0]=="X")
+	{
+	  if(atoi(subTokens[1].c_str())!=latentDim)
+	    throw ndlexceptions::FileFormatError();
+	}
+      else if(subTokens[0]=="labels")
+	{
+	  labelsPresent=true;
+	  if(atoi(subTokens[1].c_str())!=1)
+	    throw ndlexceptions::FileFormatError();
+	}
+      else
+	{
+	  throw ndlexceptions::FileFormatError();
+	}
+    }
+  
+  vector<int> labels;
+  CMatrix* pX = new CMatrix(numData, latentDim, 0.0);
+  CMatrix* pY = new CMatrix(numData, dataDim);
+  vector<int> activeSet;
+  for(int i=0; i<numData; i++)
+    {
+      tokens.clear();
+      ndlstrutil::getline(in, line);
+      ndlstrutil::tokenise(tokens, line, " ");
+      for(int j=0; j<dataDim; j++)
+	{
+	  pY->setVal(atof(tokens[j].c_str()), i, j);
+	}
+      for(int j=0; j<latentDim; j++)
+	{
+	  pX->setVal(atof(tokens[j+dataDim].c_str()), i, j);
+	}      
+      if(labelsPresent)
+	labels.push_back(atoi(tokens[latentDim+dataDim].c_str()));
+	  
+    }
+  pnoise->setTarget(*pY);
+  CGplvm* pmodel= new CGplvm(*pkern, *pnoise, latentDim);
+  pmodel->setLatentVals(*pX);
+  if(labelsPresent)
+    pmodel->setLabels(labels);
+  return pmodel;
+
+}
+    
+CGplvm* readGplvmFromFile(const string modelFileName, const int verbosity)
+{
+  // File is m, beta, X
+  if(verbosity>0)
+    cout << "Loading model file." << endl;
+  ifstream in(modelFileName.c_str());
+  if(!in.is_open()) throw ndlexceptions::FileReadError(modelFileName);
+  CGplvm* pmodel;
+  try
+    {
+      pmodel = readGplvmFromStream(in);
+    }
+  catch(ndlexceptions::FileFormatError err)
+    {
+      throw ndlexceptions::FileFormatError(modelFileName);
+    }
+  if(verbosity>0)
+    cout << "... done." << endl;
+  in.close();
+  return pmodel;
+
+}
+
+CBckCnstrdGplvm::CBckCnstrdGplvm(CKern& kernel, CScaleNoise& nois, CMatrix& backKernel, const int latDim, const int verbos) : CGplvm(kernel, nois, latDim, verbos), bK(backKernel)
+{
+  initStoreage();
+  initVals();
+}
+void CBckCnstrdGplvm::updateX() 
+{
+  X.symm(bK, rawX, 1.0, 0.0, "u", "l"); // X := bK*rawX
+  setKupToDate(false);
+  setInvKupToDate(false);
+}
+
+
+void CBckCnstrdGplvm::initStoreage()
+{
+  rawX.resize(getNumData(), getLatentDim());
+  bK.resize(getNumData(), getNumData());
+  tempgX.resize(getNumData(), getLatentDim());
+  tempgX.zeros();
+  tempgX2.resize(getNumData(), 1);
+  tempgX2.zeros();
+
+}
+void CBckCnstrdGplvm::initXrand()
+{
+  rawX.randn(0.001, 0.0);
+  updateX();
+}
+void CBckCnstrdGplvm::logLikelihoodGradient(CMatrix& g) const
+{
+  int numKernParams = kern.getNumParams();
+  tempG.resize(1, numKernParams);
+  g.zeros();
+  tempgX.zeros();
+  updateK();
+  updateInvK();
+  kern.getGradX(gX, X, X); // gX[1...ndata].val(1:ndata,1:latentdim)
+  kern.getDiagGradX(gDiagX, X);// zero except for w/ linear kernel
+  for(int i=0; i<getNumData(); i++)
+  {
+    gX[i]->scale(2.0); // accounts for symmetric covariance 
+                       // (WVB: it just pops out of the math...)
+    for(int j=0; j<getLatentDim(); j++)
+	{
+      // deal with diagonal -- d kern(X_row_i,X_row_i) / d_component_j
+	  gX[i]->setVal(gDiagX.getVal(i, j), i, j);
+	}
+  }
+  for(int j=0; j<getNumProcesses(); j++)
+  {
+    updateCovGradient(j); // covGrad = Kinv Y(:,j) Y(:,j)^t Kinv - Kinv
+               // covGrad_mn = Kinv_mr Y_rj Y_qj Kinv_qn - Kinv_mn
+    kern.getGradTransParams(tempG, X, covGrad);
+    for(int i=0; i<numKernParams; i++)
+	{
+	  g.addVal(tempG.getVal(i), i);
+	}
+
+    // This gives us the main dL/dX bit here
+    for(int i=0; i<getNumData(); i++)
+    {
+      for(int k=0; k<getLatentDim(); k++)
+      {
+        tempgX.addVal(gX[i]->dotColCol(k, covGrad, i), i, k);
+      }
+	}
+  }
+  for(int k=0; k<getLatentDim(); k++)
+  {
+    if(isLatentRegularised())
+    {
+      // grad of -X magnitudes squared, just -X
+      // (seems like a tempgX.add(X) type thing might be better)
+      for(int i=0; i<getNumData(); i++)
+	  {
+	    tempgX.addVal(-X.getVal(i, k), i, k);
+	  } 
+    }
+
+    // THIS IS THE MAIN ADDITION FOR BACK CONSTRANTS
+    // (The objective used is actually identical, just the grads differ)
+    //
+    //   tempgX2(:, 0) :=  bK * tempgX(:, k)
+    //         g(:, k) :=  texpgX2(:,0)
+    // i.e.
+    //   g := bK * tempgX
+    tempgX2.symvColCol(0, bK, tempgX, k, 1.0, 0.0, "u");      
+    for(int i=0; i<getNumData(); i++)
+	{
+	  int ind = numKernParams+i+getNumData()*k;
+	  g.setVal(tempgX2.getVal(i, 0), ind);
+	}
+  }
+  if(isInputScaleLearnt())
+  {
+    // This is only for input scale
+    for(int j=0; j<getNumProcesses(); j++)
+    {
+      // recomputing this again is inefficient (it is already done in the likelihood).
+      CMatrix invKm(m.getRows(), 1);
+      invKm.symvColCol(0, invK, m, j, 1.0, 0.0, "u");      
+      int ind = numKernParams+getNumData()*getLatentDim()+j;
+      g.setVal(1/noise.getScale(j)*(invKm.dotColCol(0, m, j)-1), ind);
+    }
+  }
+}
+void CBckCnstrdGplvm::initXpca()
+{
+  // bK initialized before constructor as kernel of the type bK_ij(Y_i,Y_j)
+  // after that it isn't modified.  
+  // With an rbf backkernel it represents the similarity of Y poses, and the
+  // goal is to make it so that similarity of two Y's results in similarity of 
+  // the corresponding two X's.
+
+  // Get eigenVectors of bK
+  CMatrix eigVectors(bK);
+  CMatrix eigVals(1, m.getRows());
+  eigVectors.syev(eigVals, "v", "u");
+
+  // X initialized to first few eigenvectors of bK
+  for(int i=0; i<getLatentDim(); i++)
+  {
+    X.copyColCol(i, eigVectors, m.getRows()-1-i);
+  }
+
+  // rawX initialized to solution of bK * rawX = X
+  eigVectors.deepCopy(bK);
+  eigVectors.setSymmetric(true);
+  rawX.deepCopy(X);
+  rawX.sysv(eigVectors, "u"); // solve bK * rawX = X
+}
+
+

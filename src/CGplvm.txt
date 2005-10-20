@@ -1,0 +1,3 @@
+This file contains classes for representing Gaussian processes latent variable models. The model relies on the CKern class.
+
+20/10/2005 Incorporating William V. Baxter's changes for compiling under MSVC. In this file key changes include, use of the new addVal matrix method, addition of comments Bill used while going through the code (which may be helpful to other users). Finally there are a couple of code tidy ups (formatting etc.).
