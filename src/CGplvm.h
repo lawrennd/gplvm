@@ -7,10 +7,16 @@ using namespace std;
 const double NULOW=1e-16;
 const string GPLVMVERSION="0.1";
 
-class CGplvm : public COptimisableModel {
+class CGplvm : public COptimisableModel 
+{
 public:
   // Constructor given a kernel
   CGplvm(CKern& kernel, CScaleNoise& nois, const int latDim=2, const int verbos=2);
+  // Constructor given a regular kernel and a kernel for dynamics (GPDM)
+  CGplvm(CKern& kernel, CKern& dynKernel, CScaleNoise& nois, const int latDim=2, const int verbos=2);
+
+  CGplvm(CKern& kernel, CMatrix& backKernel, CScaleNoise& nois, const int latDim=2, const int verbos=2);
+  CGplvm(CKern& kernel, CKern& dynKernel, CMatrix& backKernel, CScaleNoise& nois, const int latDim=2, const int verbos=2);
 
   // Initialise the storeage for the model.
   virtual void initStoreage();
@@ -24,12 +30,12 @@ public:
   void out(CMatrix& yPred, CMatrix& probPred, const CMatrix& inData) const;
   void posteriorMeanVar(CMatrix& mu, CMatrix& varSigma, const CMatrix& X) const;
   // Gradient routines
-  void updateCovGradient(int index) const;
+  void updateCovGradient(int index, CMatrix &work_invK_Y) const;
+  void updateDynCovGradient(int index, CMatrix &work_invK_X) const;
   
-  virtual void updateX(){};
+  virtual void updateX();
+  // update K and dynK and all derived quantities if they are dirty.
   void updateK() const;
-  // update invK with the inverse of the kernel plus beta terms computed from the active points.
-  void updateInvK(const int dim=0) const;
   // compute the approximation to the log likelihood.
   virtual double logLikelihood() const;
   // compute the gradients of the approximation wrt parameters.
@@ -39,63 +45,9 @@ public:
   bool equals(const CGplvm& model, const double tol=ndlutil::MATCHTOL) const;
   void display(ostream& os) const;
   
-  inline int getOptNumParams() const
-  {
-    int tot = kern.getNumParams() + getNumData()*getLatentDim();
-    if(isInputScaleLearnt())
-      tot+=getNumProcesses();
-    return tot;
-  }    
-  virtual void getOptParams(CMatrix& param) const
-  {
-    int counter = 0;
-    for(int i=0; i<kern.getNumParams(); i++)
-	{
-	  param.setVal(kern.getTransParam(i), i);
-	  counter++;
-	}
-    for(int j=0; j<getLatentDim(); j++)
-      for(int i=0; i<getNumData(); i++)
-	  {
-	    param.setVal(X.getVal(i, j), counter);
-	    counter++;
-	  }
-    if(isInputScaleLearnt())
-      for(int j=0; j<getNumProcesses(); j++)
-	  {
-	    param.setVal(noise.getScale(j), counter);
-	    counter++;
-	  }
-	      
-  }
-  virtual void setOptParams(const CMatrix& param)
-  {
-    setKupToDate(false);
-    setInvKupToDate(false);
-    int counter=0;
-    for(int i=0; i<kern.getNumParams(); i++)
-	{	  
-	  kern.setTransParam(param.getVal(i), i);
-	  counter++;
-	}
-    for(int j=0; j<getLatentDim(); j++)
-      for(int i=0; i<getNumData(); i++)
-	  {
-	    X.setVal(param.getVal(counter), i, j);
-	    counter++;
-	  }
-    if(isInputScaleLearnt())
-	{
-	  for(int j=0; j<getNumProcesses(); j++)
-      {
-        noise.setScale(param.getVal(counter), j);
-        counter++;
-      }      
-	  for(int i=0; i<numData; i++)
-	    noise.updateSites(m, beta, i, nu, g, i);
-	}
-
-  }
+  virtual int  getOptNumParams() const;
+  virtual void getOptParams(CMatrix& param) const;
+  virtual void setOptParams(const CMatrix& param);
   void computeObjectiveGradParams(CMatrix& g) const
   {
     logLikelihoodGradient(g);
@@ -145,6 +97,8 @@ public:
     X.deepCopy(Xvals);
   }
   // Flag which indicates whether scales are to be learnt.
+  // (WVB: These are equivalent to the scales in Grochow et al's SGPLVM,
+  //  but here we use Y_i/w_i instead of Y_i*w_i)
   bool isInputScaleLearnt() const
   {
     return inputScaleLearnt;
@@ -153,24 +107,31 @@ public:
   {
     inputScaleLearnt=val;
   }
-  // Flag which indicates if invK needs recomputation.
-  bool isInvKupToDate() const
+  // Flag which indicates if a dynamic model is to be learnt.
+  bool isDynamicModelLearnt() const
   {
-    return invKupToDate;
+    return dynamicsLearnt;
   }
-  void setInvKupToDate(const bool val) const
+  void setDynamicModelLearnt(const bool val)
   {
-    invKupToDate = val;
+    dynamicsLearnt=val;
   }
-  // Flag which indicates if K needs recomputation.
+  // Flag which indicates if back-constraint is used.
+  bool isBackConstrained() const
+  {
+    return backConstraint;
+  }
+  void setBackConstrained(const bool val)
+  {
+    backConstraint=val;
+  }
+  // Flag which indicates if K/Kinv/DynK/DynKInv need recomputation.
   bool isKupToDate() const
   {
     return KupToDate;
   }
   void setKupToDate(const bool val) const
   {
-    if(val==false)
-      setInvKupToDate(false);
     KupToDate = val;
   }
   
@@ -214,25 +175,41 @@ public:
   }
 
   CMatrix X;
-  CMatrix m;
+  CMatrix Xout; // for dynamics: row-shifted X with break rows zeroed
+  CMatrix m;  // scaled and biased Y
   CMatrix beta;
   CMatrix nu;
   CMatrix g;
   CKern& kern;
+  CKern* dynKern;
   CScaleNoise& noise;
+  vector<int> dynBreakList; // Sequence start frames (usually just 0)
+  CMatrix* bK;   // the back kernel if back-constrained
+  CMatrix A;  // raw updated X before transform by bK (if back-constrained)
   mutable CMatrix K;
+  mutable CMatrix dynK;
   
 protected:
   mutable vector<CMatrix*> gX;
   mutable CMatrix gDiagX;
   mutable CMatrix invK;
-  mutable CMatrix L;
+  mutable CMatrix invDynK;
+  mutable CMatrix LcholK;
+  mutable CMatrix LcholDynK;
   mutable double logDetK;
+  mutable double logDetDynK;
   mutable CMatrix covGrad;
-  
+  mutable CMatrix tempgX;
  
 private:
+  void _updateK() const;
+  // update K with the inverse of the kernel plus beta terms computed from the active points.
+  void _updateInvK(int dim=0) const;
+  void _updateDynK() const;
+  void _updateInvDynK(int dim=0) const;
   bool inputScaleLearnt;
+  bool dynamicsLearnt;
+  bool backConstraint;
   bool regulariseLatent;
   bool labelsPresent;
   vector<int> labels;
@@ -243,7 +220,6 @@ private:
   bool epUpdate;
   bool loadedModel;
   mutable bool KupToDate;
-  mutable bool invKupToDate;
   int numCovStruct;
 
   string type;
@@ -254,77 +230,6 @@ void writeGplvmToStream(const CGplvm& model, ostream& out);
 void writeGplvmToFile(const CGplvm& model, const string modelFileName, const string comment="");
 CGplvm* readGplvmFromStream(istream& in);
 CGplvm* readGplvmFromFile(const string modelfileName, const int verbosity=2);
-
-
-class CBckCnstrdGplvm : public CGplvm {
-
-public:
-  CBckCnstrdGplvm(CKern& kernel, CScaleNoise& nois, CMatrix& backKern, const int latDim=2, const int verbos=2);
-
-  void updateX();
-  void initStoreage();
-  void initXpca();
-  void initXrand();
-  void logLikelihoodGradient(CMatrix& g) const;
-  void getOptParams(CMatrix& param) const
-  {
-    int counter = 0;
-    for(int i=0; i<kern.getNumParams(); i++)
-	{
-	  param.setVal(kern.getTransParam(i), i);
-	  counter++;
-	}
-    for(int j=0; j<getLatentDim(); j++)
-      for(int i=0; i<getNumData(); i++)
-	  {
-	    param.setVal(rawX.getVal(i, j), counter);
-	    counter++;
-	  }
-    if(isInputScaleLearnt())
-      for(int j=0; j<getNumProcesses(); j++)
-	  {
-	    param.setVal(noise.getScale(j), counter);
-	    counter++;
-	  }
-
-  }
-  void setOptParams(const CMatrix& param)
-  {
-    setInvKupToDate(false);
-    setKupToDate(false);
-    int counter=0;
-    for(int i=0; i<kern.getNumParams(); i++)
-	{	  
-	  kern.setTransParam(param.getVal(i), i);
-	  counter++;
-	}
-    for(int j=0; j<getLatentDim(); j++)
-      for(int i=0; i<getNumData(); i++)
-	  {
-	    rawX.setVal(param.getVal(counter), i, j);
-	    counter++;
-	  }
-    updateX();
-    if(isInputScaleLearnt())
-	{
-	  for(int j=0; j<getNumProcesses(); j++)
-      {
-        noise.setScale(param.getVal(counter), j);
-        counter++;
-      }      
-	  for(int i=0; i<getNumData(); i++)
-	    noise.updateSites(m, beta, i, nu, g, i);
-	}
-
-  }
-
-private:
-  CMatrix& bK;   // the back kernel
-  CMatrix rawX;  // raw updated X before transformation by bK
-  mutable CMatrix tempG;
-  mutable CMatrix tempgX;
-  mutable CMatrix tempgX2;
-};
 
 
 #endif /* CGPLVM_H */
