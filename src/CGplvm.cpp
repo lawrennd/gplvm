@@ -371,9 +371,11 @@ void CGplvm::updateK() const
   {
     _updateK();
     _updateInvK();
+    kern.updateX(X);
     if (dynamicsLearnt) {
       _updateDynK();
       _updateInvDynK();
+      dynKern->updateX(X);
     }
     setKupToDate(true);
   }
