@@ -9,7 +9,7 @@ L = ivmApproxLogLikelihood(model);
 % check if there is a prior over kernel parameters
 if nargin > 3 & ~isempty(prior)
   for i = model.I
-    L = L + priorLogProb(prior, model.X(i, prior.index));
+    L = L + priorLogProb(prior, model.X(i, :));
   end
 end
 e = -L;

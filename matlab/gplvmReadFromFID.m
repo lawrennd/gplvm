@@ -1,6 +1,6 @@
 function [model, lbls] = gplvmReadFromFID(FID)
 
-% GPLVMREADFROMFID Load from a FID produced by the c++ implementation.
+% GPLVMREADFROMFID Load from a FID produced by the C++ implementation.
 
 % GPLVM
 
@@ -9,9 +9,10 @@ tokens = tokenise(lineStr, '=');
 if(length(tokens)~=2 | ~strcmp(tokens{1}, 'gplvmVersion'))
   error('Incorrect file format.')
 end
-if(~strcmp(tokens{2}, '0.1'))
+if(~strcmp(tokens{2}, '0.1') & ~strcmp(tokens{2}, '0.11'))
   error('Incorrect file version.')
 end
+version = str2num(tokens{2});
 
 lineStr = getline(FID);
 tokens = tokenise(lineStr, '=');
@@ -34,7 +35,20 @@ if(length(tokens)~=2 | ~strcmp(tokens{1}, 'latentDim'))
 end
 latentDim = str2num(tokens{2});
 
+if(version>0.1)
+  lineStr = getline(FID);
+  tokens = tokenise(lineStr, '=');
+  if(length(tokens)~=2 | ~strcmp(tokens{1}, 'dynamicsLearnt'))
+    error('Incorrect file format.')
+  end
+  dynamicsLearnt = str2num(tokens{2});
+else
+  dynamicsLearnt = 0;
+end
 kern = kernReadFromFID(FID);
+if dynamicsLearnt
+  dynKern = kernReadFromFID(FID);
+end
 noise = noiseReadFromFID(FID);
 
 labelsPresent = 0;

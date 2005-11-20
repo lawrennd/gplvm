@@ -5,7 +5,7 @@
 using namespace std;
 
 const double NULOW=1e-16;
-const string GPLVMVERSION="0.1";
+const string GPLVMVERSION="0.11";
 
 class CGplvm : public COptimisableModel 
 {

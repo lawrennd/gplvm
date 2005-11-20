@@ -498,23 +498,24 @@ double CGplvm::logLikelihood() const
     // Introduce a penalty for columns with big magnitude
     // == Sum_i Sum_j X_ij ^2
     for(int j=0; j<getLatentDim(); j++)
-	{
-	  L+=X.norm2Col(j);
-	}
+      {
+	L+=X.norm2Col(j);
+      }
   }
   if(isInputScaleLearnt())
-  {
-    // scales lead to terms of the form log w_j to be added.
-    for(int j=0; j<dataDim; j++)
-      L+=2*log(abs(noise.getScale(j)));
-  }
+    {
+      // scales lead to terms of the form log w_j to be added.
+      for(int j=0; j<dataDim; j++)
+	L+=2*log(fabs(noise.getScale(j)));
+    }
   L*=-0.5;
   L+=kern.priorLogProb();
-  if (isDynamicModelLearnt())
+
+  if(isDynamicModelLearnt())
     L+=dynKern->priorLogProb();
   return L;
 }
-// compute the gradients of the approximation wrt parameters.
+// compute the gradients wrt parameters and latent variables.
 void CGplvm::logLikelihoodGradient(CMatrix& g) const
 {
   int numKernParams = kern.getNumParams();
@@ -548,109 +549,109 @@ void CGplvm::logLikelihoodGradient(CMatrix& g) const
     updateCovGradient(j, tmpV); //covGrad = -(invK Y(:,j) Y(:,j)^t invK - invK)/2
     kern.getGradTransParams(tempG, X, covGrad);
     for(int i=0; i<numKernParams; i++)
-	{
-      g.addVal(tempG.getVal(i), i);
-	}
-
+      {
+	g.addVal(tempG.getVal(i), i);
+      }
+    
     // This gives us the main dL/dX bit here
     for(int i=0; i<numData; i++)
-	{
-	  for(int k=0; k<latentDim; k++)
       {
-        int ind = xoffset + i + numData*k;
-        gref.addVal(gX[i]->dotColCol(k, covGrad, i), ind);
+	for(int k=0; k<latentDim; k++)
+	  {
+	    int ind = xoffset + i + numData*k;
+	    gref.addVal(gX[i]->dotColCol(k, covGrad, i), ind);
+	  }
       }
-	}
   }
   if(isDynamicModelLearnt())
-  {
-    // Xout and invDynK are set up so that the rows that represent 
-    // sequence breaks don't contribute.
-    tempG.resize(1, numDynKernParams);
-    // Reuse gX.  Slightly wasteful in that we don't need derivs of first row.
-    dynKern->getGradX(gX, X, X); // gX[1...ndata].val(1:ndata,1:latentdim)
-    dynKern->getDiagGradX(gDiagX, X);// zero except for w/ linear kernel
-    for(int i=0; i<numData; i++)
     {
-      gX[i]->scale(2.0);
-      for(int j=0; j<latentDim; j++)
-      {
-        // deal with diagonal -- d kern(X_row_i,X_row_i) / d_component_j
-        gX[i]->setVal(gDiagX.getVal(i, j), i, j);
-      }
-    }
-    CMatrix& invKX = tmpV;
-    for(int j=0; j<latentDim; j++)
-    {
-      // covGrad = -0.5*(invDynK Xout(:,j) Xout(:,j)^t invDynK - invDynK)
-      // invKX   = invDynk Xout(:,j)
-      updateDynCovGradient(j,invKX);
-      dynKern->getGradTransParams(tempG, X, covGrad);
-      for(int i=0; i<numDynKernParams; i++)
-      {
-        g.addVal(tempG.getVal(i), i+numKernParams);
-      }
-
-      // This gives us the main dL/dX bit for the dynamics kernel
+      // Xout and invDynK are set up so that the rows that represent 
+      // sequence breaks don't contribute.
+      tempG.resize(1, numDynKernParams);
+      // Reuse gX.  Slightly wasteful in that we don't need derivs of first row.
+      dynKern->getGradX(gX, X, X); // gX[1...ndata].val(1:ndata,1:latentdim)
+      dynKern->getDiagGradX(gDiagX, X);// zero except for w/ linear kernel
       for(int i=0; i<numData; i++)
-      {
-        for(int k=0; k<latentDim; k++)
-        {
-          int ind = numParams + numData*k + i;
-          double v = gX[i]->dotColCol(k, covGrad, i);
-          g.addVal(v, ind);
-        }
-        // One more part of dL/dX is required here since Xout is dependent on X
-        // Works out to be - P^t * invDK * Xout
-        // g -=  P^t * invKX, where P is the shifter matrix
-        //  [ the (i+1)%numData is implementing the P^t ]
-        int ind = xoffset + numData*j + ((i+1)%numData);
-        //double factor = i==numData-1? 0.0 : -1.0;
-        double factor = -1.0*KLUDGE_FACTOR;
-        gref.addVal(factor*invKX.getVal(i), ind);
-      }
-    }    
-  }
+	{
+	  gX[i]->scale(2.0);
+	  for(int j=0; j<latentDim; j++)
+	    {
+	      // deal with diagonal -- d kern(X_row_i,X_row_i) / d_component_j
+	      gX[i]->setVal(gDiagX.getVal(i, j), i, j);
+	    }
+	}
+      CMatrix& invKX = tmpV;
+      for(int j=0; j<latentDim; j++)
+	{
+	  // covGrad = -0.5*(invDynK Xout(:,j) Xout(:,j)^t invDynK - invDynK)
+	  // invKX   = invDynk Xout(:,j)
+	  updateDynCovGradient(j,invKX);
+	  dynKern->getGradTransParams(tempG, X, covGrad);
+	  for(int i=0; i<numDynKernParams; i++)
+	    {
+	      g.addVal(tempG.getVal(i), i+numKernParams);
+	    }
+	  
+      // This gives us the main dL/dX bit for the dynamics kernel
+	  for(int i=0; i<numData; i++)
+	    {
+	      for(int k=0; k<latentDim; k++)
+		{
+		  int ind = numParams + numData*k + i;
+		  double v = gX[i]->dotColCol(k, covGrad, i);
+		  g.addVal(v, ind);
+		}
+	      // One more part of dL/dX is required here since Xout is dependent on X
+	      // Works out to be - P^t * invDK * Xout
+	      // g -=  P^t * invKX, where P is the shifter matrix
+	      //  [ the (i+1)%numData is implementing the P^t ]
+	      int ind = xoffset + numData*j + ((i+1)%numData);
+	      //double factor = i==numData-1? 0.0 : -1.0;
+	      double factor = -1.0*KLUDGE_FACTOR;
+	      gref.addVal(factor*invKX.getVal(i), ind);
+	    }
+	}    
+    }
   if(isLatentRegularised())
-  {
-    for(int i=0; i<numData; i++)
-      for(int k=0; k<latentDim; k++)
-      {
-        // grad of -X magnitudes squared, just -X
-        int ind = xoffset+i+numData*k;
-        gref.addVal(-X.getVal(i, k), ind);
-      } 
-  }
+    {
+      for(int i=0; i<numData; i++)
+	for(int k=0; k<latentDim; k++)
+	  {
+	    // grad of -X magnitudes squared, just -X
+	    int ind = xoffset+i+numData*k;
+	    gref.addVal(-X.getVal(i, k), ind);
+	  } 
+    }
   if(isBackConstrained())
   {
     CMatrix tempgX2(getNumData(), 1);
     for(int k=0; k<getLatentDim(); k++)
-    {
-      // The objective used is actually identical, just the gradients differ.
-      //
-      //   tempgX2(:, 0) :=  bK * tempgX(:, k)
-      //         g(:, k) :=  texpgX2(:,0)
-      // i.e.
-      //   g := bK * tempgX
-      tempgX2.symvColCol(0, *bK, gref, k, 1.0, 0.0, "u");
-      for(int i=0; i<getNumData(); i++)
       {
-        int ind = numParams + getNumData()*k + i;
-        g.setVal(tempgX2.getVal(i, 0), ind);
+	// The objective used is actually identical, just the gradients differ.
+	//
+	//   tempgX2(:, 0) :=  bK * tempgX(:, k)
+	//         g(:, k) :=  texpgX2(:,0)
+	// i.e.
+	//   g := bK * tempgX
+	tempgX2.symvColCol(0, *bK, gref, k, 1.0, 0.0, "u");
+	for(int i=0; i<getNumData(); i++)
+	  {
+	    int ind = numParams + getNumData()*k + i;
+	    g.setVal(tempgX2.getVal(i, 0), ind);
+	  }
       }
-    }
   }
   if(isInputScaleLearnt())
-  {
-    CMatrix &invKm = tmpV;  tmpV.resize(m.getRows(), 1);
-    for(int j=0; j<getNumProcesses(); j++)
     {
-      // recomputing this again is inefficient (already done in the likelihood).
-      invKm.symvColCol(0, invK, m, j, 1.0, 0.0, "u");      
-      int ind = numParams + numData*latentDim + j;
-      g.setVal(1/noise.getScale(j)*(invKm.dotColCol(0, m, j)-1), ind);
+      CMatrix &invKm = tmpV;  tmpV.resize(m.getRows(), 1);
+      for(int j=0; j<getNumProcesses(); j++)
+	{
+	  // recomputing this again is inefficient (already done in the likelihood).
+	  invKm.symvColCol(0, invK, m, j, 1.0, 0.0, "u");      
+	  int ind = numParams + numData*latentDim + j;
+	  g.setVal(1/noise.getScale(j)*(invKm.dotColCol(0, m, j)-1), ind);
+	}
     }
-  }
 }
 void CGplvm::pointLogLikelihood(const CMatrix& y, const CMatrix& X) const
 {
@@ -704,7 +705,10 @@ void writeGplvmToStream(const CGplvm& model, ostream& out)
   out << "numData=" << model.getNumData() << endl;
   out << "numProcesses=" << model.getNumProcesses() << endl;
   out << "latentDim=" << model.getLatentDim() << endl;
+  out << "dynamicsLearnt=" << model.isDynamicModelLearnt() << endl;
   writeKernToStream(model.kern, out);
+  if(model.isDynamicModelLearnt())
+    writeKernToStream(*model.dynKern, out);
   writeNoiseToStream(model.noise, out);
   out << "Y:" << model.getNumProcesses() << ",X:" << model.getLatentDim();
   if(model.isLabels())
@@ -755,8 +759,9 @@ CGplvm* readGplvmFromStream(istream& in)
   ndlstrutil::tokenise(tokens, line, "=");
   if(tokens.size()>2 || tokens[0]!="gplvmVersion")
     throw ndlexceptions::FileFormatError();
-  if(tokens[1]!="0.1")
+  if(tokens[1]!="0.1" && tokens[1]!="0.11")
     throw ndlexceptions::FileFormatError();
+  double version = atof(tokens[1].c_str());
 
   // next line is number of data
   tokens.clear();
@@ -781,9 +786,30 @@ CGplvm* readGplvmFromStream(istream& in)
   if(tokens.size()>2 || tokens[0]!="latentDim")
     throw ndlexceptions::FileFormatError();
   int latentDim=atoi(tokens[1].c_str());
-
-
-  CKern* pkern = readKernFromStream(in);
+  
+  bool dynamicsLearnt = false;
+  if(version>0.1) {
+    // next line is whether dynamics are learnt
+    tokens.clear();
+    ndlstrutil::getline(in, line);
+    ndlstrutil::tokenise(tokens, line, "=");
+    if(tokens.size()>2 || tokens[0]!="dynamicsLearnt")
+      throw ndlexceptions::FileFormatError();
+    int val = atoi(tokens[1].c_str());
+    if(val == 1)
+      dynamicsLearnt = true;
+    else if(val == 0)
+      dynamicsLearnt = false;
+    else
+      throw ndlexceptions::FileFormatError();
+  }
+  else
+    dynamicsLearnt = false;
+  CKern* pkern = readKernFromStream(in);  
+  CKern* pDynKern;
+  if(dynamicsLearnt){
+    pDynKern = readKernFromStream(in);
+  }
   CScaleNoise* pnoise = (CScaleNoise*)readNoiseFromStream(in);
   
   tokens.clear();
@@ -839,7 +865,13 @@ CGplvm* readGplvmFromStream(istream& in)
 	  
     }
   pnoise->setTarget(*pY);
-  CGplvm* pmodel= new CGplvm(*pkern, *pnoise, latentDim);
+  CGplvm* pmodel;
+  if(!dynamicsLearnt) {
+    pmodel = new CGplvm(*pkern, *pnoise, latentDim);
+  }
+  else {
+    pmodel = new CGplvm(*pkern, *pDynKern, *pnoise, latentDim);
+  }
   pmodel->setLatentVals(*pX);
   if(labelsPresent)
     pmodel->setLabels(labels);
