@@ -3,8 +3,6 @@ function handle = imageVisualise(imageVals, imageSize, transpose, negative, ...
 
 % IMAGEVISUALISE Helper code for showing an image during 2-D visualisation.
 
-% GPLVM
-
 if nargin < 3
   transpose = 1;
 end

@@ -1,7 +1,7 @@
-% GPLVMSCATTERPLOT 2-D scatter plot of the latent points with color - for Swiss Roll data.
+% SWISSROLL3DPLOT 2-D scatter plot of the latent points with color - for Swiss Roll data.
 
 % GPLVM
-y = gplvmLoadData('swissRoll');
+y = lvmLoadData('swissRoll');
 shade = y(:, 2);
 shade = shade - min(shade)+eps;
 shade = shade/max(shade);

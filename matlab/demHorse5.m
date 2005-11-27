@@ -1,7 +1,5 @@
 % DEMHORSE1 Model the horse data with a 3-D GPLVM.
 
-% GPLVM
-
 dataSetName = 'horse';
 for experimentNo = 7:10
 
@@ -10,7 +8,7 @@ for experimentNo = 7:10
   rand('seed', 1e5);
   
   % load data
-  [Y, lbls] = gplvmLoadData(dataSetName);
+  [Y, lbls] = lvmLoadData(dataSetName);
   
   % Set IVM active set size and iteration numbers.
   numActive = 100;

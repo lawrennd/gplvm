@@ -547,7 +547,10 @@ void CGplvm::logLikelihoodGradient(CMatrix& g) const
   for(int j=0; j<dataDim; j++)
   {
     updateCovGradient(j, tmpV); //covGrad = -(invK Y(:,j) Y(:,j)^t invK - invK)/2
-    kern.getGradTransParams(tempG, X, covGrad);
+    if(j==0)
+      kern.getGradTransParams(tempG, X, covGrad, true);
+    else
+      kern.getGradTransParams(tempG, X, covGrad, false);
     for(int i=0; i<numKernParams; i++)
       {
 	g.addVal(tempG.getVal(i), i);
@@ -586,7 +589,10 @@ void CGplvm::logLikelihoodGradient(CMatrix& g) const
 	  // covGrad = -0.5*(invDynK Xout(:,j) Xout(:,j)^t invDynK - invDynK)
 	  // invKX   = invDynk Xout(:,j)
 	  updateDynCovGradient(j,invKX);
-	  dynKern->getGradTransParams(tempG, X, covGrad);
+	  if(j==0)
+	    dynKern->getGradTransParams(tempG, X, covGrad, true);
+	  else
+	    dynKern->getGradTransParams(tempG, X, covGrad, false);
 	  for(int i=0; i<numDynKernParams; i++)
 	    {
 	      g.addVal(tempG.getVal(i), i+numKernParams);

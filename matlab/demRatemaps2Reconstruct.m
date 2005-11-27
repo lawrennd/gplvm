@@ -5,7 +5,7 @@
 rand('seed', 1e5)
 randn('seed', 1e5)
 dataset = 'ratemaps';
-[Y, lbls] = gplvmLoadData(dataset);
+[Y, lbls] = lvmLoadData(dataset);
 % Select a small subset of the data.
 Y = ratemap2Diffrep(Y);
 for i = 1:size(Y, 2);
@@ -28,7 +28,7 @@ for i = 1:size(Ytest, 2);
   Ytest(:, i) = Ytest(:, i)/sqrt(va(i));
 end
 % Set average of each signal to zero.
-options = foptions;
+options = optOptions;
 options(14) = 500;
 
 % For efficiency Gaussian doesn't handle missing values.

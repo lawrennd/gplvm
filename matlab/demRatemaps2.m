@@ -12,7 +12,7 @@ dataSetName = 'ratemaps';
 experimentNo = 2;
 
 % load data
-[Y, lbls] = gplvmLoadData(dataSetName);
+[Y, lbls] = lvmLoadData(dataSetName);
 Y = ratemap2Diffrep(Y);
 for i = 1:size(Y, 2);
   va(i) = var(Y(find(~isnan(Y(:, i))), i));

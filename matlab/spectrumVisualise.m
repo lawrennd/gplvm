@@ -3,7 +3,6 @@ function handle = spectrumVisualise(spectrumValues, convertFile, ...
 
 % SPECTRUMVISUALISE Helper code for showing an spectrum during 2-D visualisation.
 
-% GPLVM
 if nargin < 3
   width = 1000;
 end

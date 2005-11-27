@@ -4,15 +4,11 @@
 randn('seed', 1e5);
 rand('seed', 1e5);
 
-dataSetName = 'oil';
-experimentNo = 100;
+dataSetName = 'oil100';
+experimentNo = 1;
 
 % load data
-[Y, lbls] = gplvmLoadData(dataSetName);
-indices = randperm(size(Y, 1));
-indices = indices(1:100);
-Y = Y(indices, :);
-lbls = lbls(indices, :);
+[Y, lbls] = lvmLoadData(dataSetName);
 
 % Set IVM active set size and iteration numbers.
 options = gplvmOptions;
@@ -43,8 +39,6 @@ noiseType = 'gaussian';
 kernelType = 'sqexp';%{'rbf', 'bias', 'white'};
 model = gplvmFit(Y, 2, options, kernelType, noiseType, 'entropy', ...
                  numActive, lbls);
-
-error('Stop here please')
 
 % Save the results.
 X = model.X;  

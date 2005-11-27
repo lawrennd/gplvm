@@ -15,7 +15,7 @@ if nargin < 5
 end
 
 
-options = foptions;
+options = optOptions;
 if display
   options(1) = 1;
   options(9) = 1;

@@ -1,6 +1,4 @@
-% DEMKPCAOIL1 Model the oil data with a 2-D GPLVM using RBF kernel.
-
-% KERN
+% DEMKPCAOIL1 Model the oil data with kernel PCA.
 
 % Fix seeds
 
@@ -8,7 +6,7 @@ dataSetName = 'oil';
 experimentNo = 1;
 
 % load data
-[Y, lbls] = gplvmLoadData(dataSetName);
+[Y, lbls] = lvmLoadData(dataSetName);
 
 kernelType = 'mlp';
 

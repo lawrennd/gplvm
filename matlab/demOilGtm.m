@@ -6,7 +6,7 @@ rand('state', 1e5);
 randn('state', 1e5);
 
 
-[Y, lbls] = gplvmLoadData('oil');
+[Y, lbls] = lvmLoadData('oil');
 
 dataDim = size(Y, 2);
 latentDim = 2;
@@ -21,11 +21,11 @@ numCentres = 16;
 model = gtm(latentDim, numLatent, dataDim, numCentres, ...
    'gaussian', 0.1);
 
-options = foptions;
+options = optOptions;
 options(7) = 1;   
 model = gtminit(model, options, Y, 'regular', latentGridDims, [4 4]);
 
-options = foptions;
+options = optOptions;
 options(14) = 1000;
 options(1) = 1;
 

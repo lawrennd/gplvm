@@ -1,0 +1,3 @@
+# These are files that should be packaged for the GPLVM software
+dir: html
+~/mlprojects/gplvm/html/index.html

@@ -1,7 +1,5 @@
 % DEMHORSE3 Model the horse data with a 2-D MLP GPLVM.
 
-% GPLVM
-
 % Fix seeds
 randn('seed', 1e5);
 rand('seed', 1e5);
@@ -10,7 +8,7 @@ dataSetName = 'horse';
 experimentNo = 3;
 
 % load data
-[Y, lbls] = gplvmLoadData(dataSetName);
+[Y, lbls] = lvmLoadData(dataSetName);
 
 % Set IVM active set size.
 numActive = 100;

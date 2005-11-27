@@ -2,8 +2,6 @@ function [ax, data] = gplvmScatterPlot(model, YLbls);
 
 % GPLVMSCATTERPLOT 2-D scatter plot of the latent points.
 
-% GPLVM
-
 if isempty(YLbls)
   symbol = [];
 else

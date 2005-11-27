@@ -5,7 +5,7 @@
 rand('seed', 1e5)
 randn('seed', 1e5)
 dataset = 'twos';
-[Y, lbls] = gplvmLoadData(dataset);
+[Y, lbls] = lvmLoadData(dataset);
 number = 2;
 dataset(1) = upper(dataset(1));
 load(['dem' dataset num2str(number)])
@@ -30,7 +30,7 @@ Ymiss(missingIndex) = NaN;
 Ymisspres = Ymiss*2 - 1;
 Ymisspres(missingIndex) = 0;
 
-options = foptions;
+options = optOptions;
 options(14) = 500;
 
 prior.type = 'gaussian';

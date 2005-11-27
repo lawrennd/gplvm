@@ -1,18 +1,16 @@
 % DEMCEPSTRALPROJECT
 
-% GPLVM
-
 rand('seed', 1e5)
 randn('seed', 1e5)
 dataset = 'cepstral';
-[Y, lbls] = gplvmLoadData(dataset);
+[Y, lbls] = lvmLoadData(dataset);
 number = 1;
 dataset(1) = upper(dataset(1));
 load(['dem' dataset num2str(number)])
 model = ivmReconstruct(kern, noise, ivmInfo, X, Y);
 
 Ytest = load('../data/cep1');
-options = foptions;
+options = optOptions;
 options(14) = 500;
 
 prior.type = 'gaussian';

@@ -12,7 +12,7 @@ dataSetName = 'ratemaps';
 experimentNo = 1;
 
 % load data
-[Y, lbls] = gplvmLoadData(dataSetName);
+[Y, lbls] = lvmLoadData(dataSetName);
 % Select a small subset of the data.
 Y = ratemap2Diffrep(Y);
 

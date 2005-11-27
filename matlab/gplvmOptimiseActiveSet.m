@@ -19,7 +19,7 @@ end
 xVals = model.X(model.I, :);
 xVals = xVals(:)';
 
-options = foptions;
+options = optOptions;
 if display
   options(1) = 1;
   if length(xVals) <= 20

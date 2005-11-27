@@ -2,8 +2,6 @@ function handle = spectrumModify(handle, spectrumValues, convertFile, width,vara
 
 % SPECTRUMMODIFY Helper code for visualisation of spectrum data.
 
-% GPLVM
-
 if nargin < 4
   width = 500;
 end

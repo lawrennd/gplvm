@@ -9,7 +9,7 @@ global visualiseInfo
 
 figure(1)
 clf
-visualiseInfo.plotAxes = gplvmScatterPlot(model, YLbls);
+visualiseInfo.plotAxes = lvmScatterPlot(model, YLbls);
 
 visualiseInfo.latentHandle = line(0, 0, 'markersize', 20, 'color', ...
                                   [0 0 0], 'marker', '.', 'visible', ...
@@ -37,8 +37,8 @@ visualiseInfo.digitAxes = [];
 visualiseInfo.digitIndex = [];
 
 % Set the callback function
-set(gcf, 'WindowButtonMotionFcn', 'gplvmClassVisualise(''move'')')
-set(gcf, 'WindowButtonDownFcn', 'gplvmClassVisualise(''click'')')
+set(gcf, 'WindowButtonMotionFcn', 'lvmClassVisualise(''move'')')
+set(gcf, 'WindowButtonDownFcn', 'lvmClassVisualise(''click'')')
 
 figure(2)
 clf

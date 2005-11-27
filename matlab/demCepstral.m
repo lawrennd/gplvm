@@ -1,7 +1,5 @@
 % DEMCEPSTRAL1 Model the face data with a 2-D MLP GPLVM.
 
-% GPLVM
-
 % Fix seeds
 randn('seed', 1e5);
 rand('seed', 1e5);
@@ -12,7 +10,7 @@ dataSetName = 'cepstral';
 experimentNo = 1;
 
 % load data
-[Y, lbls] = gplvmLoadData(dataSetName);
+[Y, lbls] = lvmLoadData(dataSetName);
 
 % Set IVM active set size and iteration numbers.
 options = gplvmOptions;

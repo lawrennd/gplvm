@@ -1,7 +1,5 @@
 % DEMHORSE4 Try horse classification for latent spaces from 2 dims to 8.
 
-% GPLVM
-
 dataSetName = 'horse';
 for experimentNo = 4:10
 
@@ -10,7 +8,7 @@ for experimentNo = 4:10
   rand('seed', 1e5);
   
   % load data
-  [Y, lbls] = gplvmLoadData(dataSetName);
+  [Y, lbls] = lvmLoadData(dataSetName);
   
   % Set IVM active set size and iteration numbers.
   numActive = 100;

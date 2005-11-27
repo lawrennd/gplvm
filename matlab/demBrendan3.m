@@ -12,7 +12,7 @@ dataSetName = 'brendan';
 experimentNo = 3;
 
 % load data
-[Y, lbls] = gplvmLoadData(dataSetName);
+[Y, lbls] = lvmLoadData(dataSetName);
 
 % Set IVM active set size and iteration numbers.
 options = gplvmOptions;

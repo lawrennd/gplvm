@@ -12,7 +12,7 @@ if nargin < 3
   end
 end
 
-options = foptions;
+options = optOptions;
 if display
   options(1) = 1;
 end
@@ -26,7 +26,7 @@ kernParams = kernExtractParam(model.kern);
 
 params = [kernParams xVals];
 
-options = foptions;
+options = optOptions;
 if display
   options(1) = 1;
   if length(params) <= 20

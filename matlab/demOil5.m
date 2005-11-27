@@ -10,7 +10,7 @@ dataSetName = 'oil';
 experimentNo = 5;
 
 % load data
-[Y, lbls] = gplvmLoadData(dataSetName);
+[Y, lbls] = lvmLoadData(dataSetName);
 
 % Model with PPCA.
 X = gplvmPpcaInit(Y, 2);

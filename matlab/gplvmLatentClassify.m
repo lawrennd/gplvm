@@ -7,7 +7,7 @@ function gplvmLatentClassify(dataset, experimentNo, seed)
 if nargin < 3
   seed = 1e5;
 end
-[Y, lbls] = gplvmLoadData(dataset);
+[Y, lbls] = lvmLoadData(dataset);
 lbls = lbls*2 - 1;
 numLabels = size(lbls, 2);
 

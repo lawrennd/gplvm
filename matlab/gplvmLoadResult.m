@@ -4,7 +4,7 @@ function [model, lbls] = gplvmLoadResult(dataSet, number)
 
 % GPLVM
 
-[Y, lbls] = gplvmLoadData(dataSet);
+[Y, lbls] = lvmLoadData(dataSet);
 
 dataSet(1) = upper(dataSet(1));
 load(['dem' dataSet num2str(number)])

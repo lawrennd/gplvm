@@ -19,11 +19,11 @@ numCentres = 16;
 model = gtm(latentDim, numLatent, dataDim, numCentres, ...
    'gaussian', 0.1);
 
-options = foptions;
+options = optOptions;
 options(7) = 1;   
 model = gtminit(model, options, DataTrn, 'regular', latentGridDims, [4 4]);
 
-options = foptions;
+options = optOptions;
 options(14) = 1000;
 options(1) = 1;
 

@@ -5,7 +5,7 @@
 rand('seed', 1e5)
 randn('seed', 1e5)
 dataset = 'ratemaps';
-[Y, lbls] = gplvmLoadData(dataset);
+[Y, lbls] = lvmLoadData(dataset);
 % Select a small subset of the data.
 Y = ratemap2Diffrep(Y);
 
@@ -19,7 +19,7 @@ Ytest = loadRateMap('../data/ratemaps');
 Ytest = Ytest(:, 20130:20620)';
 Ytest = ratemap2Diffrep(Ytest);
 % Set average of each signal to zero.
-options = foptions;
+options = optOptions;
 options(14) = 500;
 
 prior.type = 'gaussian';

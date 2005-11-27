@@ -2,7 +2,6 @@ function [Y, lbls] = gplvmLoadData(dataset)
 
 % GPLVMLOADDATA Load the a dataset.
 
-% GPLVM
 lbls = [];
 switch dataset
  

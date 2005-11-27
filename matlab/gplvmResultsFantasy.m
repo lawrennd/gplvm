@@ -4,7 +4,7 @@ function gplvmResultsFantasy(dataset, number, dataType, varargin)
 
 % GPLVM
 
-[Y, lbls] = gplvmLoadData(dataset);
+[Y, lbls] = lvmLoadData(dataset);
 
 dataset(1) = upper(dataset(1));
 load(['dem' dataset num2str(number)])
