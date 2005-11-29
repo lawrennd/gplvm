@@ -5,7 +5,7 @@
 using namespace std;
 
 const double NULOW=1e-16;
-const string GPLVMVERSION="0.11";
+const string GPLVMVERSION="0.12";
 
 class CGplvm : public COptimisableModel 
 {
@@ -115,6 +115,39 @@ public:
   void setDynamicModelLearnt(const bool val)
   {
     dynamicsLearnt=val;
+    if(!val)
+      setDynamicKernelLearnt(val);
+  }
+  // Flag which indicates if the kernel parameters of the dynamics are to be learnt.
+  bool isDynamicKernelLearnt() const
+  {
+    return dynamicKernelLearnt;
+  }
+  void setDynamicKernelLearnt(const bool val)
+  {
+    dynamicKernelLearnt=val;
+  }
+  // Flag which indicates if the dynamics portion of log-likelihood is
+  // to be scaled.  If you learn kernel parameters, the GPDM extension
+  // doesn't normally have much impact, the dynamicScalingVal acts as
+  // a multiplier to the GPDM terms of the log likelihood. This isn't
+  // theoretically justified, but has been used by practitioners so is
+  // made available here. The scale is automatically set to the ratio
+  // of the data dimension over the latent dimension.
+  bool isDynamicScaling() const
+  {
+    if(dynamicScalingVal == 1.0)
+      return false;
+    else
+      return true;
+  }
+  void setDynamicScaling(const bool val)
+  {
+    if(val)
+      dynamicScalingVal = (double)dataDim/(double)latentDim;
+    else 
+      dynamicScalingVal = 1.0;
+    
   }
   // Flag which indicates if back-constraint is used.
   bool isBackConstrained() const
@@ -202,13 +235,14 @@ protected:
   mutable CMatrix tempgX;
  
 private:
-  void _updateK() const;
-  // update K with the inverse of the kernel plus beta terms computed from the active points.
+  void _updateK() const; // update K with the inverse of the kernel plus beta terms computed from the active points.
   void _updateInvK(int dim=0) const;
   void _updateDynK() const;
   void _updateInvDynK(int dim=0) const;
   bool inputScaleLearnt;
   bool dynamicsLearnt;
+  bool dynamicKernelLearnt;
+  double dynamicScalingVal;
   bool backConstraint;
   bool regulariseLatent;
   bool labelsPresent;

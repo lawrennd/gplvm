@@ -27,6 +27,8 @@ CGplvm::CGplvm(CKern& kernel, CKern& dynKernel, CScaleNoise& nois,
   setInputScaleLearnt(false);
   setLatentRegularised(true);
   setDynamicModelLearnt(true);
+  setDynamicScaling(false);
+  setDynamicKernelLearnt(true);
   setBackConstrained(false);
   setVerbosity(verbos);
   dataDim=noise.getNumProcesses();
@@ -62,6 +64,8 @@ CGplvm::CGplvm(CKern& kernel, CKern& dynKernel, CMatrix& backKernel,
   setInputScaleLearnt(false);
   setLatentRegularised(true);
   setDynamicModelLearnt(true);
+  setDynamicScaling(false);
+  setDynamicKernelLearnt(true);
   setBackConstrained(true);
   setVerbosity(verbos);
   dataDim=noise.getNumProcesses();
@@ -213,7 +217,7 @@ void CGplvm::updateX()
 int CGplvm::getOptNumParams() const
 {
   int tot = kern.getNumParams() + getNumData()*getLatentDim();
-  if(isDynamicModelLearnt())
+  if(isDynamicModelLearnt() && isDynamicKernelLearnt())
     tot+=dynKern->getNumParams();
   if(isInputScaleLearnt())
     tot+=getNumProcesses();
@@ -228,7 +232,7 @@ void CGplvm::getOptParams(CMatrix& param) const
     param.setVal(kern.getTransParam(i), counter);
     counter++;
   }
-  if (dynamicsLearnt) {
+  if (dynamicsLearnt && dynamicKernelLearnt) {
     int nKernParams = kern.getNumParams();
     for(int i=0; i<dynKern->getNumParams(); i++)
     {
@@ -264,7 +268,7 @@ void CGplvm::setOptParams(const CMatrix& param)
     kern.setTransParam(param.getVal(counter), i);
     counter++;
   }
-  if (dynamicsLearnt)
+  if (dynamicsLearnt && dynamicKernelLearnt)
   {
     for(int i=0; i<dynKern->getNumParams(); i++)
     {	  
@@ -454,12 +458,6 @@ void CGplvm::_updateInvDynK(int dim) const
   LcholDynK.trans();
 }
 
-// The GPDM extension doesn't seem to really have much impact normally
-// this KLUGE_FACTOR acts as a multiplier to the GPDM terms of the log 
-// likelihood.  Not very theoretically justified, but it does make the 
-// impact of GPDM much clearer.
-#define KLUDGE_FACTOR 1.0
-//#define KLUDGE_FACTOR 10.0
 
 // compute the approximation to the log likelihood.
 double CGplvm::logLikelihood() const
@@ -489,19 +487,27 @@ double CGplvm::logLikelihood() const
 
       // L += invKm' * Xout(:,j)
       double d = invKm.dotColCol(0, Xout, j);
-      L += KLUDGE_FACTOR*d;
-      L += KLUDGE_FACTOR*logDetDynK;
+      L += dynamicScalingVal*d;
+      L += dynamicScalingVal*logDetDynK;
     }
-  }
-  if(isLatentRegularised())
-  {
-    // Introduce a penalty for columns with big magnitude
-    // == Sum_i Sum_j X_ij ^2
-    for(int j=0; j<getLatentDim(); j++)
+    if(isLatentRegularised())
       {
-	L+=X.norm2Col(j);
+	// Regularise the first point in the sequence with an L2 term.
+	L+=X.norm2Col(0);
       }
   }
+  else
+    {
+      if(isLatentRegularised())
+	{
+	  // Regularise the latent space with a Gaussian distribution.
+	  for(int j=0; j<getLatentDim(); j++)
+	    {
+	      L+=X.norm2Col(j);
+	    }
+	}
+    }
+  
   if(isInputScaleLearnt())
     {
       // scales lead to terms of the form log w_j to be added.
@@ -511,7 +517,7 @@ double CGplvm::logLikelihood() const
   L*=-0.5;
   L+=kern.priorLogProb();
 
-  if(isDynamicModelLearnt())
+  if(isDynamicModelLearnt() && isDynamicKernelLearnt())
     L+=dynKern->priorLogProb();
   return L;
 }
@@ -519,7 +525,7 @@ double CGplvm::logLikelihood() const
 void CGplvm::logLikelihoodGradient(CMatrix& g) const
 {
   int numKernParams = kern.getNumParams();
-  int numDynKernParams = isDynamicModelLearnt() ? dynKern->getNumParams() : 0;
+  int numDynKernParams = (isDynamicModelLearnt() && isDynamicKernelLearnt()) ? dynKern->getNumParams() : 0;
   int numParams = numKernParams + numDynKernParams;
   int xoffset = numParams;
   g.zeros();
@@ -570,7 +576,7 @@ void CGplvm::logLikelihoodGradient(CMatrix& g) const
     {
       // Xout and invDynK are set up so that the rows that represent 
       // sequence breaks don't contribute.
-      tempG.resize(1, numDynKernParams);
+
       // Reuse gX.  Slightly wasteful in that we don't need derivs of first row.
       dynKern->getGradX(gX, X, X); // gX[1...ndata].val(1:ndata,1:latentdim)
       dynKern->getDiagGradX(gDiagX, X);// zero except for w/ linear kernel
@@ -584,21 +590,26 @@ void CGplvm::logLikelihoodGradient(CMatrix& g) const
 	    }
 	}
       CMatrix& invKX = tmpV;
+      tempG.resize(1, numDynKernParams);
       for(int j=0; j<latentDim; j++)
 	{
 	  // covGrad = -0.5*(invDynK Xout(:,j) Xout(:,j)^t invDynK - invDynK)
 	  // invKX   = invDynk Xout(:,j)
 	  updateDynCovGradient(j,invKX);
-	  if(j==0)
-	    dynKern->getGradTransParams(tempG, X, covGrad, true);
-	  else
-	    dynKern->getGradTransParams(tempG, X, covGrad, false);
-	  for(int i=0; i<numDynKernParams; i++)
+	  if(isDynamicKernelLearnt())
 	    {
-	      g.addVal(tempG.getVal(i), i+numKernParams);
+	      if(j==0)
+		// add any priors on the kernel parameters in
+		dynKern->getGradTransParams(tempG, X, covGrad, true);
+	      else
+		dynKern->getGradTransParams(tempG, X, covGrad, false);
+	      for(int i=0; i<numDynKernParams; i++)
+		{
+		  g.addVal(tempG.getVal(i), i+numKernParams);
+		}
 	    }
 	  
-      // This gives us the main dL/dX bit for the dynamics kernel
+	  // This gives us the main dL/dX bit for the dynamics kernel
 	  for(int i=0; i<numData; i++)
 	    {
 	      for(int k=0; k<latentDim; k++)
@@ -607,46 +618,57 @@ void CGplvm::logLikelihoodGradient(CMatrix& g) const
 		  double v = gX[i]->dotColCol(k, covGrad, i);
 		  g.addVal(v, ind);
 		}
-	      // One more part of dL/dX is required here since Xout is dependent on X
-	      // Works out to be - P^t * invDK * Xout
-	      // g -=  P^t * invKX, where P is the shifter matrix
-	      //  [ the (i+1)%numData is implementing the P^t ]
+	      // One more part of dL/dX is required here since Xout is
+	      // dependent on X Works out to be - P^t * invDK * Xout g
+	      // -= P^t * invKX, where P is the shifter matrix [ the
+	      // (i+1)%numData is implementing the P^t ]
 	      int ind = xoffset + numData*j + ((i+1)%numData);
-	      //double factor = i==numData-1? 0.0 : -1.0;
-	      double factor = -1.0*KLUDGE_FACTOR;
+	      double factor = -1.0*dynamicScalingVal;
 	      gref.addVal(factor*invKX.getVal(i), ind);
 	    }
 	}    
+      if(isLatentRegularised())
+	{
+	  for(int k=0; k<latentDim; k++)
+	    {
+	      // grad of -X magnitude squared for first point.
+	      int ind = xoffset+numData*k;
+	      gref.addVal(-X.getVal(0, k), ind);
+	    } 
+	}
     }
-  if(isLatentRegularised())
+  else
     {
-      for(int i=0; i<numData; i++)
-	for(int k=0; k<latentDim; k++)
-	  {
-	    // grad of -X magnitudes squared, just -X
-	    int ind = xoffset+i+numData*k;
-	    gref.addVal(-X.getVal(i, k), ind);
-	  } 
+      if(isLatentRegularised())
+	{
+	  for(int i=0; i<numData; i++)
+	    for(int k=0; k<latentDim; k++)
+	      {
+		// grad of -X magnitudes squared, just -X
+		int ind = xoffset+i+numData*k;
+		gref.addVal(-X.getVal(i, k), ind);
+	      } 
+	}
     }
   if(isBackConstrained())
-  {
-    CMatrix tempgX2(getNumData(), 1);
-    for(int k=0; k<getLatentDim(); k++)
-      {
-	// The objective used is actually identical, just the gradients differ.
-	//
-	//   tempgX2(:, 0) :=  bK * tempgX(:, k)
-	//         g(:, k) :=  texpgX2(:,0)
-	// i.e.
-	//   g := bK * tempgX
-	tempgX2.symvColCol(0, *bK, gref, k, 1.0, 0.0, "u");
-	for(int i=0; i<getNumData(); i++)
-	  {
-	    int ind = numParams + getNumData()*k + i;
-	    g.setVal(tempgX2.getVal(i, 0), ind);
-	  }
-      }
-  }
+    {
+      CMatrix tempgX2(getNumData(), 1);
+      for(int k=0; k<getLatentDim(); k++)
+	{
+	  // The objective used is actually identical, just the gradients differ.
+	  //
+	  //   tempgX2(:, 0) :=  bK * tempgX(:, k)
+	  //         g(:, k) :=  texpgX2(:,0)
+	  // i.e.
+	  //   g := bK * tempgX
+	  tempgX2.symvColCol(0, *bK, gref, k, 1.0, 0.0, "u");
+	  for(int i=0; i<getNumData(); i++)
+	    {
+	      int ind = numParams + getNumData()*k + i;
+	      g.setVal(tempgX2.getVal(i, 0), ind);
+	    }
+	}
+    }
   if(isInputScaleLearnt())
     {
       CMatrix &invKm = tmpV;  tmpV.resize(m.getRows(), 1);
@@ -711,8 +733,13 @@ void writeGplvmToStream(const CGplvm& model, ostream& out)
   out << "numData=" << model.getNumData() << endl;
   out << "numProcesses=" << model.getNumProcesses() << endl;
   out << "latentDim=" << model.getLatentDim() << endl;
+  out << "latentRegularised=" << model.isLatentRegularised() << endl;
+  out << "backConstrained=" << model.isBackConstrained() << endl;
   out << "dynamicsLearnt=" << model.isDynamicModelLearnt() << endl;
   writeKernToStream(model.kern, out);
+  if(model.isBackConstrained()){
+    // In future back constraint info goes here.
+  }
   if(model.isDynamicModelLearnt())
     writeKernToStream(*model.dynKern, out);
   writeNoiseToStream(model.noise, out);
@@ -765,7 +792,7 @@ CGplvm* readGplvmFromStream(istream& in)
   ndlstrutil::tokenise(tokens, line, "=");
   if(tokens.size()>2 || tokens[0]!="gplvmVersion")
     throw ndlexceptions::FileFormatError();
-  if(tokens[1]!="0.1" && tokens[1]!="0.11")
+  if(tokens[1]!="0.1" && tokens[1]!="0.11" && tokens[1]!="0.12")
     throw ndlexceptions::FileFormatError();
   double version = atof(tokens[1].c_str());
 
@@ -793,6 +820,44 @@ CGplvm* readGplvmFromStream(istream& in)
     throw ndlexceptions::FileFormatError();
   int latentDim=atoi(tokens[1].c_str());
   
+  bool latentRegularised = true;
+  if(version>0.11) {
+    // next line is whether latent space is regularised
+    tokens.clear();
+    ndlstrutil::getline(in, line);
+    ndlstrutil::tokenise(tokens, line, "=");
+    if(tokens.size()>2 || tokens[0]!="latentRegularised")
+      throw ndlexceptions::FileFormatError();
+    int val = atoi(tokens[1].c_str());
+    if(val == 1)
+      latentRegularised = true;
+    else if(val == 0)
+      latentRegularised = false;
+    else
+      throw ndlexceptions::FileFormatError();
+  }
+  else
+    latentRegularised = true;
+
+  bool backConstrained = false;
+  if(version>0.11) {
+    // next line is whether it is back constrained
+    tokens.clear();
+    ndlstrutil::getline(in, line);
+    ndlstrutil::tokenise(tokens, line, "=");
+    if(tokens.size()>2 || tokens[0]!="backConstrained")
+      throw ndlexceptions::FileFormatError();
+    int val = atoi(tokens[1].c_str());
+    if(val == 1)
+      backConstrained = true;
+    else if(val == 0)
+      backConstrained = false;
+    else
+      throw ndlexceptions::FileFormatError();
+  }
+  else
+    backConstrained = false;
+
   bool dynamicsLearnt = false;
   if(version>0.1) {
     // next line is whether dynamics are learnt
@@ -812,6 +877,9 @@ CGplvm* readGplvmFromStream(istream& in)
   else
     dynamicsLearnt = false;
   CKern* pkern = readKernFromStream(in);  
+  if(backConstrained){
+    // In future back constraint info goes here.
+  }
   CKern* pDynKern;
   if(dynamicsLearnt){
     pDynKern = readKernFromStream(in);
