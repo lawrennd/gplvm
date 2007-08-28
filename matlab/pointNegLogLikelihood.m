@@ -6,7 +6,7 @@ function e = pointNegLogLikelihood(x, y, model, prior)
 
 L = ivmLogLikelihood(model, x, y);
 
-% check if there is a prior over kernel parameters
+% check if there is a prior over latent space 
 if nargin > 3
   L = L + priorLogProb(prior, x);
 end

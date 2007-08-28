@@ -19,7 +19,7 @@ clf
 clf
 ax = axes('position', [0.05 0.05 0.9 0.9]);
 hold on
-[c, h] = contourf(X1, X2, log10(reshape(1./varsigma(:, 1), size(X1))), 63); 
+[c, h] = contourf('v6', X1, X2, log10(reshape(1./varsigma(:, 1), size(X1))), 63); 
 shading flat
 jt = colormap('jet');
 gr = colormap('gray');

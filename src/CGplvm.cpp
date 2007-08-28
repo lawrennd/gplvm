@@ -7,6 +7,7 @@ CGplvm::CGplvm(CKern& kernel, CScaleNoise& nois,
   kern(kernel), dynKern(0), bK(0),
   noise(nois), latentDim(latDim), KupToDate(false)
 {
+  setApproximationType("ftc");
   setInputScaleLearnt(false);
   setLatentRegularised(true);
   setDynamicModelLearnt(false);
@@ -89,6 +90,10 @@ void CGplvm::initStoreage()
     gX.push_back(new CMatrix(numData, latentDim));
   gDiagX.resize(numData, latentDim);
   covGrad.resize(numData, numData);
+  if (isSparseApproximation())
+  {
+    X_u.resize(numActive, latentDim);
+  }
   if (dynamicsLearnt) 
   {
     Xout.resize(numData, latentDim);

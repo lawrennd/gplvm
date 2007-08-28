@@ -90,6 +90,15 @@ public:
   {
     numData = val;
   }
+  inline int getNumActive() const
+  {
+    return numActive;
+  }
+  void setNumActive(const int val)
+  {
+    numActive = val;
+  }
+  
   void setLatentVals(CMatrix& Xvals) 
   {
     assert(X.getCols()==latentDim);
@@ -158,6 +167,33 @@ public:
   {
     backConstraint=val;
   }
+  string getApproximationType() const
+  {
+    return approximationType;
+  }
+  void setApproximationType(const string val) 
+  {
+    approximationType=val;
+    if(approximationType == "ftc")
+      setSparseApproximation(false);
+    else if(approximationType == "dtc")
+      setSparseApproximation(true);
+    else if(approximationType == "fitc")
+      setSparseApproximation(true);
+    else if (approximationType == "pitc")
+      setSparseApproximation(true);
+    else
+      throw ndlexceptions::Error("Unknown approximation type");
+  }
+  // Flag which indicates if a sparse approximation is used.
+  bool isSparseApproximation() const
+  {
+    return sparseApproximation;
+  }
+  void setSparseApproximation(const bool val)
+  {
+    sparseApproximation=val;
+  }
   // Flag which indicates if K/Kinv/DynK/DynKInv need recomputation.
   bool isKupToDate() const
   {
@@ -206,8 +242,9 @@ public:
   {
     regulariseLatent=val;
   }
-
+  
   CMatrix X;
+  CMatrix X_u; // for inducing variables if needed.
   CMatrix Xout; // for dynamics: row-shifted X with break rows zeroed
   CMatrix m;  // scaled and biased Y
   CMatrix beta;
@@ -244,15 +281,18 @@ private:
   bool dynamicKernelLearnt;
   double dynamicScalingVal;
   bool backConstraint;
+  bool sparseApproximation;
   bool regulariseLatent;
   bool labelsPresent;
   vector<int> labels;
   int latentDim;
   int dataDim;
   int numData;
+  int numActive;
   bool terminate;
   bool epUpdate;
   bool loadedModel;
+  string approximationType;
   mutable bool KupToDate;
   int numCovStruct;
 
