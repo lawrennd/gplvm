@@ -4,6 +4,7 @@
 CGplvm::CGplvm(CKern& kernel, CScaleNoise& nois, 
                const int latDim, const int verbos)
   :
+  COptimisableModel(),
   kern(kernel), dynKern(0), bK(0),
   noise(nois), latentDim(latDim), KupToDate(false)
 {
@@ -25,6 +26,7 @@ CGplvm::CGplvm(CKern& kernel, CKern& dynKernel, CScaleNoise& nois,
   kern(kernel), dynKern(&dynKernel), bK(0),
   noise(nois), latentDim(latDim), KupToDate(false)
 {
+  setApproximationType("ftc");
   setInputScaleLearnt(false);
   setLatentRegularised(true);
   setDynamicModelLearnt(true);
@@ -44,6 +46,7 @@ CGplvm::CGplvm(CKern& kernel, CMatrix& backKernel, CScaleNoise& nois,
   kern(kernel), dynKern(0), bK(&backKernel),
   noise(nois), latentDim(latDim), KupToDate(false)
 {
+  setApproximationType("ftc");
   setInputScaleLearnt(false);
   setLatentRegularised(true);
   setDynamicModelLearnt(false);
@@ -62,6 +65,7 @@ CGplvm::CGplvm(CKern& kernel, CKern& dynKernel, CMatrix& backKernel,
   kern(kernel), dynKern(&dynKernel), bK(&backKernel),
   noise(nois), latentDim(latDim), KupToDate(false)
 {
+  setApproximationType("ftc");
   setInputScaleLearnt(false);
   setLatentRegularised(true);
   setDynamicModelLearnt(true);
@@ -700,8 +704,8 @@ void CGplvm::optimise(const int iters)
     }
   if(getVerbosity()>2 && getOptNumParams()<40)
     checkGradients();
-
-  scgOptimise(iters);
+  setMaxIters(iters);
+  scgOptimise();
 
   if(getVerbosity()>1)
     cout << "... done. " << endl;
