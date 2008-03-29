@@ -14,10 +14,11 @@ experimentNo = 2;
 
 % Set IVM active set size and iteration numbers.
 options = gplvmOptions;
+options.display=1;
 numActive = 100;
 
 % Fit the GP latent variable model
-noiseType = 'probit';
+noiseType = 'ordered';
 selectionCriterion = 'entropy';
 kernelType = {'rbf', 'bias', 'white'};
 model = gplvmFit(Y, 2, options, kernelType, noiseType, selectionCriterion, numActive, lbls);

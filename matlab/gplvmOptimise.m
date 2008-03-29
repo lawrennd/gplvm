@@ -18,7 +18,7 @@ for iterNum = 1:options.extIters
   % Optimise the kernel if required.
   if options.kernIters
     if options.display > 1
-      points = gplvm2dPlot(model, lbls);
+      points = lvmTwoDPlot(model.X, lbls);
     end
     model = ivmOptimiseIVM(model, options.display);
     % Update the kernel.

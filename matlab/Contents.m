@@ -1,7 +1,7 @@
 % gplvm toolbox
 % Version 1.02 Wednesday, June 11, 2003 at 10:43:54
 % Copyright (c) 2003 Neil D. Lawrence
-% $Revision: 1.1 $
+% $Revision: 1.3 $
 % 
 % CLASSVISUALISE Callback function for visualising data in 2-D.
 % GTMOIL For visualising oil data --- uses NETLAB toolbox.
