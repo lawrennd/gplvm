@@ -1,0 +1,62 @@
+
+
+<head>
+<title>Gaussian Process Latent Variable Model - MATLAB Software</title>
+</head>
+
+<body><div class="section">
+
+<h1>GP-LVM Software</h1>
+
+This page will describe examples of how to use the Gaussian process latent variable model Software (GPLVM) available for <a href="http://www.cs.man.ac.uk/neill-bin/software/downloadForm.cgi?toolbox=gplvm">download here</a>. 
+
+Alternative GP-LVM implementations from this site:
+
+The GP-LVM C++ software is available from <a href="http://www.cs.man.ac.uk/~neill/gplvmcpp/">here</a>.
+
+A new MATLAB version of the toolbox is now being worked on. It doesn't rely on the IVM toolbox, and currently will only do Gaussian noise models. The sparse algorithm is a development of Snelson and Ghahramani's pseudo-inputs. This new version is available <a href="http://www.cs.man.ac.uk/~neill/fgplvm/">here</a>.
+
+<h3>Release Information</h3>
+
+<p>Current release is 2.1. 
+
+<p>New toolboxes are required since version 2.1, namely the datasets and the mltools toolbox.</p>
+
+
+<table>
+  <tr>
+    <td width="65%"><b>Toolbox</b></td>
+    <td width="35%"><b>Version</b></td>
+  </tr>
+  <tr>
+    <td width="65%">
+
+<p align="left"><a href="http://www.cs.man.ac.uk/~neill/kern/downloadFiles">KERN</a><br>
+<a href="http://www.cs.man.ac.uk/~neill/noise/downloadFiles">NOISE</a><br>
+<a href="http://www.cs.man.ac.uk/~neill/ndlutil/downloadFiles">NDLUTIL</a><br>
+<a href="http://www.cs.man.ac.uk/~neill/optimi/downloadFiles">OPTIMI</a><br>
+<a href="http://www.cs.man.ac.uk/~neill/prior/downloadFiles">PRIOR</a><br>
+<a href="http://www.cs.man.ac.uk/~neill/ivm/downloadFiles">IVM</a></p>
+<a href="http://www.cs.man.ac.uk/~neill/mltools/downloadFiles">MLTOOLS</a></p>
+<a href="http://www.cs.man.ac.uk/~neill/datasets/downloadFiles">DATASETS</a></p>
+
+    </td>
+    <td width="35%">
+
+<p align="center">0.14<br>
+0.13<br>
+0.14<br>
+0.13<br>
+0.13<br>
+0.32<br>
+0.1<br>
+0.1</p>
+
+    </td>
+  </tr>
+</table>
+
+<p>Finally you will also need the <a href="http://www.ncrg.aston.ac.uk/netlab/">NETLAB toolbox</a> in your path.
+
+
+</div></body>
