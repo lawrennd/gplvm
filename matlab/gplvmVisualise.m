@@ -15,6 +15,7 @@ visualiseInfo.latentHandle = line(0, 0, 'markersize', 20, 'color', ...
                                   [0 0 0], 'marker', '.', 'visible', ...
                                   'on', 'erasemode', 'xor');
 
+visualiseInfo.runDynamics = false;
 % Set up the X limits and Y limits of the main plot
 xLim = [min(model.X(:, 1)) max(model.X(:, 1))];
 xSpan = xLim(2) - xLim(1);
@@ -83,6 +84,9 @@ visualiseInfo.model = model;
 %visualiseInfo.invSigma= model.Sigma.Linv'*model.Sigma.Linv;
 %~/
 visualiseInfo.varargin = varargin;
+if isstr(visualiseModify)
+  visualiseModify = str2func(visualiseModify);
+end
 visualiseInfo.visualiseModify = visualiseModify;
 visualiseInfo.visHandle = visHandle;
 hold off
