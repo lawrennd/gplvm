@@ -1,4 +1,4 @@
-% DEMTWOS2 Model the twos data with a 2-D RBF GPLVM with binomial noise.
+% DEMLINEARORDINAL1 Model the twos data with a 2-D RBF GPLVM with binomial noise.
 
 % GPLVM
 

@@ -1,6 +1,6 @@
 function gplvmResultsFantasy(dataset, number, dataType, varargin)
 
-% GPLVMRESULTFANTASY Load a results file and visualise the `fantasies'.
+% GPLVMRESULTSFANTASY Load a results file and visualise the `fantasies'.
 
 % GPLVM
 

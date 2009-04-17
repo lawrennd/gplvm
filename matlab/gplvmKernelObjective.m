@@ -2,7 +2,7 @@ function f = gplvmKernelObjective(params, model, prior)
 
 % GPLVMKERNELOBJECTIVE Likelihood approximation.
 
-% GPVLM
+% GPLVM
 
 xVals = params(model.kern.nParams+1:end);
 
@@ -12,7 +12,7 @@ L = ivmApproxLogLikelihood(model);
 
 % check if there is a prior over active set positions.
 L = L + kernPriorLogProb(model.kern);
-if nargin > 2 & ~isempty(prior)
+if nargin > 2 && ~isempty(prior)
   L = L + priorLogProb(prior, xVals);
 end
 f = -L;

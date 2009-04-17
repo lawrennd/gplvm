@@ -1,6 +1,6 @@
 function [ax, data] = gplvmScatterPlotColor(model, shade);
 
-% GPLVMSCATTERPLOT 2-D scatter plot of the latent points with color - for Swiss Roll data.
+% GPLVMSCATTERPLOTCOLOR 2-D scatter plot of the latent points with color - for Swiss Roll data.
 
 % GPLVM
 
