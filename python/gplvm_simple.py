@@ -30,7 +30,7 @@ class GPLVM(ndlutil.model):
 		return self.X.flatten()
 	def set_param(self,x):
 		self.X = x.reshape(self.N,self.Q)
-		self.kern.set_X(self.X)
+		self.kern.expand_X(self.X)
 		self.K = self.kern.compute()
 		self.Ki,self.hld = ndlutil.pdinv(self.K)
 	def log_likelihood(self):
