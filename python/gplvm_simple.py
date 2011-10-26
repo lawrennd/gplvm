@@ -20,6 +20,7 @@ class GPLVM(ndlutil.model):
 		#PCA initialisation
 		YY = Y
 		val,vec = np.linalg.eig(np.dot(YY.T,YY))
+		vec = vec[:,np.argsort(val)[::-1]]
 		self.X = np.linalg.lstsq(vec[:,:Q],YY.T)[0].T
 
 		self.Youter = np.dot(YY,YY.T)
@@ -43,36 +44,33 @@ class GPLVM(ndlutil.model):
 	def predict(self,Xnew):
 		Kx = self.kern.cross_compute(Xnew)
 		return np.dot(Kx.T, np.dot(self.Ki,self.Y))
+	def plot(self):
+		assert self.Y.shape[1]==2
+		pb.figure()
+		pb.scatter(self.Y[:,0],self.Y[:,1],40,self.X[:,0].copy(),linewidth=0)
+		Xnew = np.linspace(self.X.min(),self.X.max(),200)[:,None]
+		Ynew = self.predict(Xnew)
+		pb.plot(Ynew[:,0],Ynew[:,1],'k',linewidth=1.5)
 
 
-
-
-
-	
 
 if __name__=='__main__':
 	X = np.random.randn(50,1)
 	k = kern.rbf(X) + kern.white(X)
 	k.kerns[1].alpha = 0.001
-	k.kerns[0].gamma = 0.2
+	k.kerns[0].gamma = 0.02
 	K = k.compute()
 	Y = np.random.multivariate_normal(np.zeros(50),K,2).T
 	Y = Y-Y.mean(0)
 	Y /= Y.std(0)
 	m = GPLVM(Y,1,k)
+	m.checkgrad()
 
-	pb.scatter(m.Y[:,0],m.Y[:,1],40,m.X[:,0].copy(),linewidth=0)
-	Xnew = np.linspace(m.X.min(),m.X.max(),200)[:,None]
-	Ynew = m.predict(Xnew)
-	pb.plot(Ynew[:,0],Ynew[:,1],'k')
+	m.plot()
 	pb.title('PCA initialisation')
 
 	m.optimize(maxfun=50)
-	pb.figure()
-	pb.scatter(m.Y[:,0],m.Y[:,1],40,m.X[:,0].copy(),linewidth=0)
-	Xnew = np.linspace(m.X.min(),m.X.max(),200)[:,None]
-	Ynew = m.predict(Xnew)
-	pb.plot(Ynew[:,0],Ynew[:,1],'k')
+	m.plot()
 	pb.title('After optimisation')
 
 	
