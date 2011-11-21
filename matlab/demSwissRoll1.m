@@ -1,4 +1,4 @@
-% DEMSWISSROLL1 Model the face data with a 2-D GPLVM.
+% DEMSWISSROLL1 Model the face swiss roll with a 2-D GPLVM.
 
 % GPLVM
 
