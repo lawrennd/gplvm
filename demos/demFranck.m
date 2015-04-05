@@ -1,0 +1,1 @@
+numData = 100;[points] = tfaceParse('data/','franck', 0, 1000, numData);connection = tfaceLoadConnectivity('data/franck.parts');bb = tfaceGetBoundingBox(points);% [points, scales] = stickmanNormalizeVariance(points);
