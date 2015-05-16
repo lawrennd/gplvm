@@ -2,8 +2,7 @@
 GP-LVM Software
 ===============
 
-This page will describe examples of how to use the Gaussian process latent variable model Software (GPLVM) available for [download here](http://www.cs.man.ac.uk/neill-bin/software/downloadForm.cgi?toolbox=gplvm). Alternative GP-LVM implementations from this site: The GP-LVM C++ software is available from [here](http://inverseprobability.com/gplvmcpp/). The main GPLVM release is the FGPLVM toolbox which uses a different form of sparsification. This release is maintained only occaisionally. This new version is available [here](http://inverseprobability.com/fgplvm/).
-The GPLVM software can be downloaded [here](http://www.cs.man.ac.uk/neill-bin/software/downloadForm.cgi?toolbox=gplvm).
+This is a deprecated release of GPLVM matlab software. Alternative GP-LVM implementations from this site: The GP-LVM C++ software is available from [here](http://inverseprobability.com/gplvmcpp/). The main GPLVM release is the FGPLVM toolbox which uses a different form of sparsification. This release is maintained only occaisionally. This new version is available [here](http://inverseprobability.com/fgplvm/).
 
 Release Information
 -------------------
