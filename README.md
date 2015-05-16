@@ -1,8 +1,3 @@
-|----------------------------------|----------------------------------------------------------|------------------------------------------------------------------|
-| [Neil's homepage](/~neill/)  |   | [research group](http://intranet.cs.man.ac.uk/mlo/)  |   | [MLO Researchers](http://intranet.cs.man.ac.uk/mlo/people/)  |   |
-
-|-----|---------------------------------------------------------------------------------------------------------|
-|     | ![University Logo](http://www.cs.manchester.ac.uk/ai/pictures/icons/est1824.gif "Manchester Est. 1824") |
 
 GP-LVM Software
 ===============
@@ -32,8 +27,6 @@ As well as downloading the GPLVM software you need to obtain the toolboxes speci
 This release includes updates to the files for reading GPLVMs from the C++ code.
 
 Page updated on Fri Apr 17 17:47:17 2009
-| [Disclaimer](http://www.manchester.ac.uk/aboutus/documents/disclaimer/ "Disclaimer") | [Privacy](http://www.manchester.ac.uk/aboutus/documents/privacy/ "Privacy") | [Copyright notice](http://www.manchester.ac.uk/aboutus/documents/copyright/ "Copyright Notice") | [Accessibility](http://www.manchester.ac.uk/aboutus/documents/accessibility/ "Accessibility") | [Freedom of information](http://www.manchester.ac.uk/aboutus/documents/foi/ "Freedom of information") | [Feedback](http://www.manchester.ac.uk/aboutus/contact/feedback/ "Feedback") |
 
-Please contact <webmaster.cs@manchester.ac.uk> with comments and suggestions
 
 
