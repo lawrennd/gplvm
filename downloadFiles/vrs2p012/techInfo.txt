@@ -1,0 +1,143 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ g = gplvmActiveSetGradient(xVals, model, prior)
+
+ e = gplvmActiveSetNegLogLikelihood(xVals, y, model, prior)
+
+ e = gplvmActiveSetObjective(xVals, model, prior)
+
+ g = gplvmApproxLogLikeActiveSetGrad(model)
+ function g = activeSetGradient(model, covGrad)
+
+ gplvmClassVisualise(call)
+ function point = localGetNormCursorPoint(figHandle)
+ function [x, y] = localGetNormAxesPoint(point, axesHandle)
+ function [x, y] = localCheckPointPosition(visualiseInfo)
+
+ [X, kern, noise, ivmInfo] = gplvmDeconstruct(model, fileName)
+
+ [ax] = gplvmFantasyPlot(model, visualiseFunction, axesWidth, yAxesRatio, varargin);
+
+ model = gplvmFit(Y, dims, options, kernelType, noiseType, ...
+%                           selectionCriterion, numActive, lbls)
+
+ g = gplvmGradientPoint(x_i, i, model, A) %A, invK, activeX, Y, D, theta, activeSet)
+
+ model = gplvmInit(Y, dims, options, kernelType, noiseType, selectionCriterion, numActive)
+
+ [X, var] = gplvmInitX(Y, dims, options)
+
+ [X, sigma2] = gplvmIsomapInit(Y, dims)
+
+ g = gplvmKernelGradient(params, model, prior)
+
+ X = gplvmKpcaInit(Y, kern, dims)
+
+ gplvmLatentClassify(dataset, experimentNo, seed)
+
+ [Y, lbls] = gplvmLoadData(dataset)
+
+ [model, lbls] = gplvmLoadResult(dataSet, number)
+
+ model = gplvmOptimise(model, options, lbls);
+
+ model = gplvmOptimiseActiveSet(model, prior, display, iters)
+
+ model = gplvmOptimiseKernel(model, prior, display, iters);
+
+ model = gplvmOptimisePoint(model, i, prior, display, iters);
+
+ options = gplvmOptions
+
+
+ [X, sigma2] = gplvmPpcaInit(Y, dims)
+
+ [model, lbls] = gplvmReadFromFID(FID)
+
+ [model,labels] = gplvmReadFromFile(fileName)
+
+ gplvmResultsCpp(fileName, dataType, varargin)
+
+ gplvmResultsDynamic(dataSet, number, dataType, varargin)
+
+ gplvmResultsFantasy(dataset, number, dataType, varargin)
+
+ gplvmResultsStatic(dataSet, number, dataType, varargin)
+
+ [ax, data] = gplvmScatterPlot(model, YLbls);
+ function returnVal = gplvmtwoDPlot(X, label, symbol)
+
+ [ax, data] = gplvmScatterPlotColor(model, shade);
+ function returnVal = gplvmtwoDPlot(X)
+
+ [X, sigma2] = gplvmSppcaInit(Y, dims)
+
+ gplvmStaticImageVisualise(model, visualiseFunction, axesWidth, varargin)
+
+ [vers, depend] = gplvmVers
+
+ gplvmVisualise(model, YLbls, ...
+% 			visualiseFunction, visualiseModify, varargin)
+
+ gplvmVisualise1D(model, visualiseFunction, visualiseModify, varargin)
+
+ handle = imageModify(handle, imageValues, imageSize, transpose, negative, ...
+% 		     scale)
+
+ handle = imageVisualise(imageVals, imageSize, transpose, negative, ...
+% 				 scale)
+
+ point = invGetNormAxesPoint(axesPoint, axesHandle)
+
+ g = pointApproxNegGradX(x, m, beta, model, prior)
+
+ e = pointApproxNegLogLikelihood(x, m, beta, model, prior)
+
+ g = pointNegGradX(x, y, model, prior)
+
+ e = pointNegLogLikelihood(x, y, model, prior)
+
+ handle = spectrumModify(handle, spectrumValues, convertFile, width,varargin);
+
+ handle = spectrumVisualise(spectrumValues, convertFile, ...
+%                                     width, varargin)
+
+
+ vector3Modify(handle, values)
+
+ handle = vector3Visualise(vals)
+
+ handle = vectorModify(handle, values)
+
+ handle = vectorVisualise(vals)
+
