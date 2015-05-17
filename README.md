@@ -9,7 +9,7 @@ Release Information
 
 **Current release is 2.11**.
 
-As well as downloading the GPLVM software you need to obtain the toolboxes specified below. **These can be downloaded using the *same* password you get from registering for the GPLVM software.**
+As well as downloading the GPLVM software you need to obtain the toolboxes specified below.
 
 | **Toolbox**                                  | **Version** |
 |----------------------------------------------|-------------|
