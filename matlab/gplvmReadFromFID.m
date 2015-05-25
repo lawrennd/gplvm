@@ -4,55 +4,72 @@ function [model, lbls] = gplvmReadFromFID(FID)
 
 % GPLVM
 
-lineStr = getline(FID);
-tokens = tokenise(lineStr, '=');
-if(length(tokens)~=2 | ~strcmp(tokens{1}, 'gplvmVersion'))
-  error('Incorrect file format.')
+try
+  version = readVersionFromFID(FID);
+catch
+  if strcmp(lasterr, 'Incorrect file format')
+    version = readDoubleFromFID(FID, 'gplvmVersion');
+  else
+    error(lasterr)
+  end
 end
-if(~strcmp(tokens{2}, '0.1') & ~strcmp(tokens{2}, '0.11'))
+
+if version > 0.2 
   error('Incorrect file version.')
 end
-version = str2num(tokens{2});
 
-lineStr = getline(FID);
-tokens = tokenise(lineStr, '=');
-if(length(tokens)~=2 | ~strcmp(tokens{1}, 'numData'))
-  error('Incorrect file format.')
-end
-numData = str2num(tokens{2});
-
-lineStr = getline(FID);
-tokens = tokenise(lineStr, '=');
-if(length(tokens)~=2 | ~strcmp(tokens{1}, 'numProcesses'))
-  error('Incorrect file format.')
-end
-dataDim = str2num(tokens{2});
-
-lineStr = getline(FID);
-tokens = tokenise(lineStr, '=');
-if(length(tokens)~=2 | ~strcmp(tokens{1}, 'latentDim'))
-  error('Incorrect file format.')
-end
-latentDim = str2num(tokens{2});
-
-if(version>0.1)
-  lineStr = getline(FID);
-  tokens = tokenise(lineStr, '=');
-  if(length(tokens)~=2 | ~strcmp(tokens{1}, 'dynamicsLearnt'))
-    error('Incorrect file format.')
+if version>0.11
+  baseType = readStringFromFID(FID, 'baseType')
+  if ~strcmp(baseType, 'datamodel')
+    error('Incorrect base type in file.')
   end
-  dynamicsLearnt = str2num(tokens{2});
+  type = readStringFromFID(FID, 'type')
+  if ~strcmp(type, 'gplvm')
+    error('Incorrect type in file.')
+  end
+end
+numData = readIntFromFID(FID, 'numData')
+if version > 0.11 
+  strv = 'outputDim';
 else
+  strv = 'numProcesses';
+end
+dataDim = readIntFromFID(FID, strv)
+if version > 0.11 
+  strv = 'inputDim';
+else
+  strv = 'latentDim';
+end
+latentDim = readIntFromFID(FID, strv);
+if(version>0.1)
+  latentRegularised = readBoolFromFID(FID, 'latentRegularised');
+  backConstrained = readBoolFromFID(FID, 'backConstrained');
+  dynamicsLearnt = readBoolFromFID(FID,  'dynamicsLearnt');
+else
+  latentRegularised = 0;
+  backConstrained = 0;
   dynamicsLearnt = 0;
 end
-kern = kernReadFromFID(FID);
-if dynamicsLearnt
-  dynKern = kernReadFromFID(FID);
+if version > 0.11
+  kern = modelReadFromFID(FID);
+else
+  kern = kernReadFromFID(FID, version);
 end
-noise = noiseReadFromFID(FID);
+if dynamicsLearnt
+  if version > 0.11
+    dynKern = modelReadFromFID(FID);
+  else
+    dynKern = kernReadFromFID(FID, version);
+  end
+end
+if version > 0.11
+  noise = modelReadFromFID(FID);
+else
+  noise = noiseReadFromFID(FID, version);
+end
 
 labelsPresent = 0;
-labels=ones(numData, 1);
+labels = ones(numData, 1);
 lineStr = getline(FID);
 tokens = tokenise(lineStr,',');
 for i=1:length(tokens)

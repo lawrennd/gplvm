@@ -1,3 +1,28 @@
+/* CGplvm.cpp version 1.9
+
+GPLVMCPP distribution version 0.2 published on Friday 17 Apr 2009 at 17:02
+
+
+The program is free for academic use. Please contact Neil Lawrence
+<neil@dcs.shef.ac.uk> if you are interested in using the software for
+commercial purposes.
+
+The software must not be modified and distributed without prior
+permission of the author.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
 #include "CGplvm.h"
 
 CGplvm::CGplvm()
@@ -136,7 +161,9 @@ void CGplvm::initStoreage()
 void CGplvm::initVals()
 {
   for(int i=0; i<numData; i++)
-    pnoise->updateSites(m, beta, i, nu, g, i);
+    {
+      pnoise->updateSites(m, beta, i, nu, g, i);
+    }
   initX();
 }
 
@@ -356,9 +383,62 @@ void CGplvm::posteriorMeanVar(CMatrix& mu, CMatrix& varSigma, const CMatrix& Xin
   }
   // solve LcholK' * tmp = kX, kX := tmp
   kX.trsm(LcholK, 1.0, "L", "L", "T", "N"); // now it is invK * K
-  mu.gemm(kX, m, 1.0, 0.0, "T", "N");
-}
 
+  mu.gemm(kX, m, 1.0, 0.0, "T", "N");
+
+  /*add bias and scale*/
+  double bias,scale;
+  for(int i=0;i<mu.getCols();i++)
+    {
+      bias = pnoise->getBias(i);
+      scale = pnoise->getScale(i);
+      for(int j=0;j<mu.getRows();j++)
+	{
+	  mu.setVal(mu.getVal(j,i)*scale+bias,j,i);
+	}
+    }
+}
+void CGplvm::posteriorMeanVarDyn(CMatrix& mu, CMatrix& varSigma, const CMatrix& Xin) const
+{
+  DIMENSIONMATCH(mu.getCols()==latentDim);
+  DIMENSIONMATCH(varSigma.getCols()==latentDim);
+  CMatrix kX(numData, Xin.getRows());
+  updateK();
+  dynKern->compute(kX, *pX, Xin);
+
+  // solve LcholK * tmp = kX,  kX := tmp
+  kX.trsm(LcholDynK, 1.0, "L", "L", "N", "N"); // now it is LcholDynKinv*K
+  /*
+  for(int i=0; i<Xin.getRows(); i++)
+    {
+      cerr << "1.1" << endl;
+      double vsVal = dynKern->diagComputeElement(Xin, i) - kX.norm2Col(i);
+      cerr << dynKern->diagComputeElement(Xin, i) << "," <<  kX.norm2Col(i) << endl;
+      cerr << "1.2" << endl;
+      BOUNDCHECK(vsVal>=0);
+      cerr << "1.3" << endl;
+      for(int j=0; j<latentDim; j++)
+	varSigma.setVal(vsVal, i, j);	    
+    }
+  */
+  // solve LcholK' * tmp = kX, kX := tmp
+  kX.trsm(LcholDynK, 1.0, "L", "L", "T", "N"); // now it is invK * K
+  mu.gemm(kX, *pX, 1.0, 0.0, "T", "N");
+
+  /*add bias and scale*/
+  /*
+  double bias,scale;
+  for(int i=0;i<mu.getCols();i++)
+    {
+      bias = pnoise->getBias(i);
+      scale = pnoise->getScale(i);
+      for(int j=0;j<mu.getRows();j++)
+	{
+	  mu.setVal(mu.getVal(j,i)*scale+bias,j,i);
+	}
+    }
+  */
+}
 
 // Gradient routines
 void CGplvm::updateCovGradient(int j, CMatrix& invKm) const
@@ -439,7 +519,9 @@ void CGplvm::_updateInvK(int dim) const
   //  invK.setVal(invK.getVal(i, i) + 1/getBetaVal(i, dim), i, i);
   LcholK.chol(); /// this will initially be upper triangular.
   logDetK = logDet(LcholK);
+  /*CARL ALTERATION*/
   invK.setSymmetric(true);
+  /*END CARL ALTERATION*/
   invK.pdinv(LcholK);
   LcholK.trans();
 }
@@ -468,22 +550,20 @@ void CGplvm::_updateDynK() const
       dynK.setVal(0.0, i,f);
     }
     dynK.setVal(1.0, f,f);
-  }
+    }
   dynK.setSymmetric(true);
 }
 
 void CGplvm::_updateInvDynK(int dim) const
 {
   LcholDynK.deepCopy(dynK);
-
   LcholDynK.chol(); /// this will initially be upper triangular.
-
   // Note that dynK has some row/cols knocked out.  These will have 1's
   // on the diag of the cholesky decomp, and 1 on the diag doesn't contribute
   // to the logDet.
   logDetDynK = logDet(LcholDynK);
-  invDynK.pdinv(LcholDynK);
   invDynK.setSymmetric(true);
+  invDynK.pdinv(LcholDynK);
   LcholDynK.trans();
 }
 
@@ -555,6 +635,7 @@ double CGplvm::logLikelihoodGradient(CMatrix& g) const
 {
   int numKernParams = pkern->getNumParams();
   int numDynKernParams = (isDynamicModelLearnt() && isDynamicKernelLearnt()) ? dynKern->getNumParams() : 0;
+
   int numParams = numKernParams + numDynKernParams;
   int xoffset = numParams;
   g.zeros();
@@ -612,14 +693,18 @@ double CGplvm::logLikelihoodGradient(CMatrix& g) const
       for(int i=0; i<numData; i++)
 	{
 	  gX[i]->scale(2.0);
-	  for(int j=0; j<latentDim; j++)
+      	  for(int j=0; j<latentDim; j++)
 	    {
 	      // deal with diagonal -- d kern(X_row_i,X_row_i) / d_component_j
 	      gX[i]->setVal(gDiagX.getVal(i, j), i, j);
 	    }
 	}
       CMatrix& invKX = tmpV;
-      tempG.resize(1, numDynKernParams);
+      /*      if(numDynKernParams>0)
+	{
+	  tempG.resize(1, numDynKernParams);
+	}
+      */
       for(int j=0; j<latentDim; j++)
 	{
 	  // covGrad = -0.5*(invDynK Xout(:,j) Xout(:,j)^t invDynK - invDynK)
@@ -627,6 +712,9 @@ double CGplvm::logLikelihoodGradient(CMatrix& g) const
 	  updateDynCovGradient(j,invKX);
 	  if(isDynamicKernelLearnt())
 	    {
+	      /*CARL ALTERATION*/
+	      tempG.resize(1, numDynKernParams);
+	      /*END CARL ALTERATION*/
 	      if(j==0)
 		// add any priors on the kernel parameters in
 		dynKern->getGradTransParams(tempG, *pX, covGrad, true);
@@ -923,6 +1011,9 @@ CGplvm* readGplvmFromStream(istream& in)
 {
   CGplvm* pmodel = new CGplvm();
   pmodel->fromStream(in);
+
+  pmodel->initVals();
+
   return pmodel;
 }
     
@@ -945,6 +1036,7 @@ CGplvm* readGplvmFromFile(const string modelFileName, const int verbosity)
   if(verbosity>0)
     cout << "... done." << endl;
   in.close();
+    
   return pmodel;
 
 }

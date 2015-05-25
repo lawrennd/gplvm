@@ -1,22 +1,27 @@
 #ifndef CGPLVM_H
 #define CGPLVM_H
-#include "CDataModel.h"
+#include "CMltools.h"
 
 using namespace std;
 
 const double NULOW=1e-16;
-const string GPLVMVERSION="0.12";
+const string GPLVMVERSION="0.2";
 
-class CGplvm : public COptimisableModel 
+class CGplvm : public CDataModel, public CProbabilisticOptimisable, public CStreamInterface, public CMatInterface
 {
 public:
+  CGplvm();
   // Constructor given a kernel
-  CGplvm(CKern& kernel, CScaleNoise& nois, const int latDim=2, const int verbos=2);
+  CGplvm(CKern* kernel, CScaleNoise* nois, const int latDim=2, const int verbos=2);
   // Constructor given a regular kernel and a kernel for dynamics (GPDM)
-  CGplvm(CKern& kernel, CKern& dynKernel, CScaleNoise& nois, const int latDim=2, const int verbos=2);
+  CGplvm(CKern* kernel, CKern* dynKernel, CScaleNoise* nois, const int latDim=2, const int verbos=2);
 
-  CGplvm(CKern& kernel, CMatrix& backKernel, CScaleNoise& nois, const int latDim=2, const int verbos=2);
-  CGplvm(CKern& kernel, CKern& dynKernel, CMatrix& backKernel, CScaleNoise& nois, const int latDim=2, const int verbos=2);
+  CGplvm(CKern* kernel, CMatrix* backKernel, CScaleNoise* nois, const int latDim=2, const int verbos=2);
+  CGplvm(CKern* kernel, CKern* dynKernel, CMatrix* backKernel, CScaleNoise* nois, const int latDim=2, const int verbos=2);
+
+
+  void writeParamsToStream(ostream& os) const;
+  void readParamsFromStream(istream& is);
 
   // Initialise the storeage for the model.
   virtual void initStoreage();
@@ -39,19 +44,20 @@ public:
   // compute the approximation to the log likelihood.
   virtual double logLikelihood() const;
   // compute the gradients of the approximation wrt parameters.
-  virtual void logLikelihoodGradient(CMatrix& g) const;
+  double logLikelihoodGradient(CMatrix& g) const;
   virtual void pointLogLikelihood(const CMatrix& y, const CMatrix& X) const;
   void optimise(const int iters=1000);
   bool equals(const CGplvm& model, const double tol=ndlutil::MATCHTOL) const;
   void display(ostream& os) const;
   
-  virtual int  getOptNumParams() const;
+  virtual unsigned int getOptNumParams() const;
   virtual void getOptParams(CMatrix& param) const;
   virtual void setOptParams(const CMatrix& param);
-  void computeObjectiveGradParams(CMatrix& g) const
+  double computeObjectiveGradParams(CMatrix& g) const
   {
-    logLikelihoodGradient(g);
+    double ll = logLikelihoodGradient(g);
     g.negate();
+    return -ll;
   }
   double computeObjectiveVal() const
   {
@@ -59,10 +65,10 @@ public:
   }
 #ifdef _NDLMATLAB
   mxArray* toMxArray() const { 
- assert(false && "NOT IMPLEMENTED"); return 0;
+ SANITYCHECK(false && "NOT IMPLEMENTED"); return 0;
                                        }
   void fromMxArray(const mxArray* matlabArray) {
- assert(false && "NOT IMPLEMENTED");
+ SANITYCHECK(false && "NOT IMPLEMENTED");
    }
 #endif
 
@@ -82,7 +88,7 @@ public:
   {
     latentDim = val;
   }
-  inline int getNumData() const
+  inline unsigned int getNumData() const
   {
     return numData;
   }
@@ -99,11 +105,11 @@ public:
     numActive = val;
   }
   
-  void setLatentVals(CMatrix& Xvals) 
+  void setLatentVals(CMatrix* Xvals) 
   {
-    assert(X.getCols()==latentDim);
-    assert(X.getRows()==numData);
-    X.deepCopy(Xvals);
+    DIMENSIONMATCH(pX->getCols()==latentDim);
+    DIMENSIONMATCH(pX->getRows()==numData);
+    pX = Xvals;
   }
   // Flag which indicates whether scales are to be learnt.
   // (WVB: These are equivalent to the scales in Grochow et al's SGPLVM,
@@ -206,7 +212,7 @@ public:
   
   void setLabels(const vector<int> labs)
   {
-    assert(labs.size()==numData);
+    DIMENSIONMATCH(labs.size()==numData);
     labels = labs;
     labelsPresent = true;
   }
@@ -216,14 +222,14 @@ public:
   }
   void setLabel(const int val, const int index)
   {
-    assert(index<numData);
-    assert(index>=0);
+    BOUNDCHECK(index<numData);
+    BOUNDCHECK(index>=0);
     labels[index] = val;
   }
   int getLabel(const int index) const
   {
-    assert(index<numData);
-    assert(index>=0);
+    BOUNDCHECK(index<numData);
+    BOUNDCHECK(index>=0);
     return labels[index];
   }
   int getMaxLabelVal() const
@@ -243,16 +249,16 @@ public:
     regulariseLatent=val;
   }
   
-  CMatrix X;
+  CMatrix* pX;
   CMatrix X_u; // for inducing variables if needed.
   CMatrix Xout; // for dynamics: row-shifted X with break rows zeroed
   CMatrix m;  // scaled and biased Y
   CMatrix beta;
   CMatrix nu;
   CMatrix g;
-  CKern& kern;
+  CKern* pkern;
   CKern* dynKern;
-  CScaleNoise& noise;
+  CScaleNoise* pnoise;
   vector<int> dynBreakList; // Sequence start frames (usually just 0)
   CMatrix* bK;   // the back kernel if back-constrained
   CMatrix A;  // raw updated X before transform by bK (if back-constrained)
@@ -272,6 +278,9 @@ protected:
   mutable CMatrix tempgX;
  
 private:
+
+  void _init();
+
   void _updateK() const; // update K with the inverse of the kernel plus beta terms computed from the active points.
   void _updateInvK(int dim=0) const;
   void _updateDynK() const;
